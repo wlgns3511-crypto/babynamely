@@ -3,8 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
-const SITE_NAME = "BabyNamely";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://babynamely.com";
+const SITE_NAME = "NameBlooms";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nameblooms.com";
 
 export const metadata: Metadata = {
   title: { default: `${SITE_NAME} - Baby Name Meanings, Origins & Popularity`, template: `%s | ${SITE_NAME}` },

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllNames, getTopComparisons } from "@/lib/db";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://babynamely.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nameblooms.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const names = getAllNames();

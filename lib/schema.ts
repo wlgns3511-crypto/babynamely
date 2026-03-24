@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://babynamely.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nameblooms.com';
 
 export function breadcrumbSchema(items: { name: string; url: string }[]) {
   return {
