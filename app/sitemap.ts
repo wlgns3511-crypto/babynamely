@@ -35,7 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   });
 
   // Middle name pages
-  const middleNames = getTopNamesForMiddleNames(3000);
+  const middleNames = getTopNamesForMiddleNames(2000);
   const middlePages: MetadataRoute.Sitemap = middleNames.map((n) => ({
     url: `${SITE_URL}/middle-names/${n.slug}/`,
     changeFrequency: "monthly" as const,
