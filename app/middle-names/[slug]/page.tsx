@@ -9,7 +9,7 @@ interface Props { params: Promise<{ slug: string }> }
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
-  return getTopNamesForMiddleNames(2000).map(n => ({ slug: n.slug }));
+  return getTopNamesForMiddleNames(1500).map(n => ({ slug: n.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
