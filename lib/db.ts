@@ -117,6 +117,23 @@ export function getTopComparisons(limit = 2000): { slugA: string; slugB: string 
   return pairs;
 }
 
+// --- Middle names ---
+
+export function getMiddleNameSuggestions(firstName: BabyName, limit = 20): BabyName[] {
+  // Get popular names of same gender that pair well
+  // Avoid names starting with same letter for variety
+  const firstLetter = firstName.slug.charAt(0);
+  return getDb().prepare(`
+    SELECT * FROM names
+    WHERE gender = ? AND slug != ? AND slug NOT LIKE ?
+    ORDER BY peak_pct DESC LIMIT ?
+  `).all(firstName.gender, firstName.slug, firstLetter + '%', limit) as BabyName[];
+}
+
+export function getTopNamesForMiddleNames(limit = 3000): { slug: string }[] {
+  return getDb().prepare('SELECT slug FROM names ORDER BY peak_pct DESC LIMIT ?').all(limit) as { slug: string }[];
+}
+
 // --- Counts ---
 
 export function countNames(): number {

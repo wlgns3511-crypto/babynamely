@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllNames, getTopComparisons } from "@/lib/db";
+import { getAllNames, getTopComparisons, getTopNamesForMiddleNames } from "@/lib/db";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nameblooms.com";
 
@@ -34,5 +34,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     return { url: `${SITE_URL}/compare/${a}-vs-${b}`, changeFrequency: "monthly" as const, priority: 0.5 };
   });
 
-  return [...staticPages, ...letters, ...namePages, ...comparePages];
+  // Middle name pages
+  const middleNames = getTopNamesForMiddleNames(3000);
+  const middlePages: MetadataRoute.Sitemap = middleNames.map((n) => ({
+    url: `${SITE_URL}/middle-names/${n.slug}/`,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...staticPages, ...letters, ...namePages, ...comparePages, ...middlePages];
 }
