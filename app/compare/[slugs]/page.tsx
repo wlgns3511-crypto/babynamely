@@ -12,7 +12,7 @@ function parseSlugs(s: string): [string, string] | null {
 }
 
 export async function generateStaticParams() {
-  return getTopComparisons(2000).map((p) => {
+  return getTopComparisons(500).map((p) => {
     const [a, b] = [p.slugA, p.slugB].sort();
     return { slugs: `${a}-vs-${b}` };
   });

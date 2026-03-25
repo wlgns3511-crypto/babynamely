@@ -7,7 +7,8 @@ import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 interface Props { params: Promise<{ slug: string }> }
 
 export async function generateStaticParams() {
-  return getAllNames().map((n) => ({ slug: n.slug }));
+  // Pre-build top 3000 names, rest via ISR
+  return getAllNames().slice(0, 3000).map((n) => ({ slug: n.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

@@ -28,7 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Comparison pages
-  const comparisons = getTopComparisons(2000);
+  const comparisons = getTopComparisons(500);
   const comparePages: MetadataRoute.Sitemap = comparisons.map((p) => {
     const [a, b] = [p.slugA, p.slugB].sort();
     return { url: `${SITE_URL}/compare/${a}-vs-${b}`, changeFrequency: "monthly" as const, priority: 0.5 };
