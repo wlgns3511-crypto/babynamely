@@ -35,6 +35,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <footer className="border-t border-slate-200 mt-16">
           <div className="max-w-5xl mx-auto px-4 py-6 text-sm text-slate-500">
             <p>Data from the U.S. Social Security Administration (SSA) baby names database.</p>
+            <p className="mt-2">
+              <a href="/about" className="hover:text-purple-600">About</a>
+              {" | "}
+              <a href="/privacy" className="hover:text-purple-600">Privacy</a>
+              {" | "}
+              <a href="/contact" className="hover:text-purple-600">Contact</a>
+            </p>
             <p className="mt-1">&copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.</p>
           </div>
         </footer>
