@@ -139,3 +139,11 @@ export function getTopNamesForMiddleNames(limit = 3000): { slug: string }[] {
 export function countNames(): number {
   return (getDb().prepare('SELECT COUNT(*) as c FROM names').get() as { c: number }).c;
 }
+
+export function getPopularBoyNames(limit = 10): BabyName[] {
+  return getDb().prepare('SELECT * FROM names WHERE gender = ? ORDER BY peak_pct DESC LIMIT ?').all('boy', limit) as BabyName[];
+}
+
+export function getPopularGirlNames(limit = 10): BabyName[] {
+  return getDb().prepare('SELECT * FROM names WHERE gender = ? ORDER BY peak_pct DESC LIMIT ?').all('girl', limit) as BabyName[];
+}
