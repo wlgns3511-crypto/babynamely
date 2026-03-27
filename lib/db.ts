@@ -101,20 +101,43 @@ export function getSimilarNames(slug: string, gender: string, limit = 10): BabyN
 
 // --- Comparisons ---
 
-export function getTopComparisons(limit = 2000): { slugA: string; slugB: string }[] {
-  // Top names by popularity, generate pairs
-  const topNames = getDb().prepare(`
-    SELECT slug FROM names ORDER BY peak_pct DESC LIMIT 200
-  `).all() as { slug: string }[];
+function hasComparisonsTable(): boolean {
+  const row = getDb().prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='comparisons'"
+  ).get();
+  return !!row;
+}
 
-  const pairs: { slugA: string; slugB: string }[] = [];
+export function getTopComparisons(limit = 2000): { slugA: string; slugB: string; nameA: string; nameB: string }[] {
+  if (hasComparisonsTable()) {
+    return getDb().prepare(`
+      SELECT slugA, slugB, nameA, nameB FROM comparisons
+      ORDER BY popularity_score DESC
+      LIMIT ?
+    `).all(limit) as { slugA: string; slugB: string; nameA: string; nameB: string }[];
+  }
+
+  // Fallback: generate pairs from top names (legacy)
+  const topNames = getDb().prepare(`
+    SELECT slug, name FROM names ORDER BY peak_pct DESC LIMIT 200
+  `).all() as { slug: string; name: string }[];
+
+  const pairs: { slugA: string; slugB: string; nameA: string; nameB: string }[] = [];
   for (let i = 0; i < topNames.length && pairs.length < limit; i++) {
     for (let j = i + 1; j < topNames.length && pairs.length < limit; j++) {
-      const [a, b] = [topNames[i].slug, topNames[j].slug].sort();
-      pairs.push({ slugA: a, slugB: b });
+      if (topNames[i].slug < topNames[j].slug) {
+        pairs.push({ slugA: topNames[i].slug, slugB: topNames[j].slug, nameA: topNames[i].name, nameB: topNames[j].name });
+      } else {
+        pairs.push({ slugA: topNames[j].slug, slugB: topNames[i].slug, nameA: topNames[j].name, nameB: topNames[i].name });
+      }
     }
   }
   return pairs;
+}
+
+export function getComparisonCount(): number {
+  if (!hasComparisonsTable()) return 0;
+  return (getDb().prepare('SELECT COUNT(*) as c FROM comparisons').get() as { c: number }).c;
 }
 
 // --- Middle names ---

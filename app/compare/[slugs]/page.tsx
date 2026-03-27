@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getPopularity, getTopComparisons } from "@/lib/db";
+import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames } from "@/lib/db";
 import { formatPct, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
+
+export const dynamicParams = true;
 
 interface Props { params: Promise<{ slugs: string }> }
 
@@ -12,7 +14,7 @@ function parseSlugs(s: string): [string, string] | null {
 }
 
 export async function generateStaticParams() {
-  return getTopComparisons(500).map((p) => {
+  return getTopComparisons(5000).map((p) => {
     const [a, b] = [p.slugA, p.slugB].sort();
     return { slugs: `${a}-vs-${b}` };
   });
@@ -25,8 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = getNameBySlug(parsed[0]), b = getNameBySlug(parsed[1]);
   if (!a || !b) return {};
   return {
-    title: `${a.name} vs ${b.name} - Baby Name Comparison`,
-    description: `Compare baby names ${a.name} and ${b.name}. See meanings, origins, and popularity trends side by side.`,
+    title: `${a.name} vs ${b.name} - Baby Name Comparison | Which Is Better?`,
+    description: `Compare baby names ${a.name} and ${b.name} side by side. Meanings, origins, popularity trends, and which name parents prefer in 2025.`,
     alternates: { canonical: `/compare/${slugs}` },
   };
 }
@@ -42,12 +44,16 @@ export default async function ComparePage({ params }: Props) {
   const popA = getPopularity(slugA).filter(p => p.year % 10 === 0);
   const popB = getPopularity(slugB).filter(p => p.year % 10 === 0);
 
+  // Get similar names for "Parents who like X also consider" section
+  const similarA = getSimilarNames(slugA, a.gender, 5);
+  const similarB = getSimilarNames(slugB, b.gender, 5);
+
   const faqs = [
     { question: `Is ${a.name} or ${b.name} more popular?`, answer: `${(a.peak_pct || 0) > (b.peak_pct || 0) ? a.name : b.name} has historically been more popular. ${a.name} peaked in ${a.peak_year || 'N/A'} while ${b.name} peaked in ${b.peak_year || 'N/A'}.` },
+    { question: `What is the meaning of ${a.name}?`, answer: a.meaning ? `${a.name} means "${a.meaning}" and has ${a.origin || 'unknown'} origins.` : `The meaning of ${a.name} is not well documented in our database.` },
+    { question: `What is the meaning of ${b.name}?`, answer: b.meaning ? `${b.name} means "${b.meaning}" and has ${b.origin || 'unknown'} origins.` : `The meaning of ${b.name} is not well documented in our database.` },
+    { question: `Can ${a.name} and ${b.name} be used as sibling names?`, answer: `${a.name} and ${b.name} can work well as sibling names. They ${a.origin === b.origin && a.origin ? `share ${a.origin} origins` : 'come from different origins'}, giving a ${a.origin === b.origin ? 'cohesive' : 'diverse'} feel.` },
   ];
-  if (a.meaning && b.meaning) {
-    faqs.push({ question: `What do ${a.name} and ${b.name} mean?`, answer: `${a.name} means "${a.meaning}" while ${b.name} means "${b.meaning}".` });
-  }
 
   const breadcrumbs = [
     { name: "Home", url: "/" },
@@ -63,7 +69,8 @@ export default async function ComparePage({ params }: Props) {
         ))}
       </nav>
 
-      <h1 className="text-3xl font-bold mb-6">{a.name} vs {b.name}</h1>
+      <h1 className="text-3xl font-bold mb-2">{a.name} vs {b.name}</h1>
+      <p className="text-slate-600 mb-6">Choosing between {a.name} and {b.name}? Compare meanings, origins, and popularity trends to find the perfect baby name.</p>
 
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {[a, b].map((n) => (
@@ -107,7 +114,35 @@ export default async function ComparePage({ params }: Props) {
         </div>
       </section>
 
-      <section className="mt-8">
+      {(similarA.length > 0 || similarB.length > 0) && (
+        <section className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Parents Also Consider</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            {similarA.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2 text-slate-700">If you like {a.name}, also consider:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {similarA.map(n => (
+                    <a key={n.slug} href={`/name/${n.slug}`} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm hover:bg-purple-100">{n.name}</a>
+                  ))}
+                </div>
+              </div>
+            )}
+            {similarB.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2 text-slate-700">If you like {b.name}, also consider:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {similarB.map(n => (
+                    <a key={n.slug} href={`/name/${n.slug}`} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100">{n.name}</a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <section className="mt-8 mb-8">
         <h2 className="text-xl font-bold mb-4">FAQ</h2>
         {faqs.map((faq, i) => (
           <details key={i} className="border border-slate-200 rounded-lg mb-2" open={i === 0}>
@@ -116,6 +151,11 @@ export default async function ComparePage({ params }: Props) {
           </details>
         ))}
       </section>
+
+      <footer className="mt-12 pt-8 border-t border-slate-200 text-xs text-slate-400 space-y-2">
+        <p>Popular baby name comparisons: {a.name} vs {b.name}, best baby names 2025, unique baby names, {a.name} name meaning, {b.name} name meaning, baby name popularity trends, {a.origin || 'classic'} baby names, {b.origin || 'classic'} baby names</p>
+        <p>Compare more names: <a href="/compare" className="underline hover:text-slate-600">Baby Name Comparison Tool</a> | <a href="/names/gender/boy" className="underline hover:text-slate-600">Popular Boy Names</a> | <a href="/names/gender/girl" className="underline hover:text-slate-600">Popular Girl Names</a></p>
+      </footer>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />
