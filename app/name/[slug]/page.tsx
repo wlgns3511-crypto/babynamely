@@ -190,6 +190,14 @@ export default async function NamePage({ params }: Props) {
         </section>
       )}
 
+      <section className="mt-8 p-6 bg-pink-50 rounded-xl border border-pink-100">
+        <h3 className="text-lg font-semibold text-pink-900 mb-3">Preparing for Your Little One?</h3>
+        <p className="text-pink-800 text-sm leading-relaxed">
+          Shop personalized baby gifts, compare baby registry services, and find the best deals on nursery essentials.
+          Planning a family budget? Check <a href="https://costbycity.com" className="underline font-medium">cost of living data</a> for your area.
+        </p>
+      </section>
+
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
       {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />}
     </div>
