@@ -7,6 +7,7 @@ import { analyzeName } from "@/lib/name-analysis";
 import { DataFeedback } from "@/components/DataFeedback";
 import { EmbedButton } from "@/components/EmbedButton";
 import { FreshnessTag } from "@/components/FreshnessTag";
+import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -192,6 +193,8 @@ export default async function NamePage({ params }: Props) {
           </div>
         </section>
       )}
+
+      <NamePopularityPredictor />
 
       <FreshnessTag source="Social Security Administration" />
 

@@ -1,5 +1,6 @@
 import { getPopularNames, countNames, getAllOrigins } from "@/lib/db";
 import { genderColor } from "@/lib/format";
+import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 
 export default function Home() {
   const boyNames = getPopularNames("boy", 20);
@@ -58,6 +59,8 @@ export default function Home() {
           </div>
         </section>
       </div>
+
+      <NamePopularityPredictor />
 
       {origins.length > 0 && (
         <section className="mb-8">
