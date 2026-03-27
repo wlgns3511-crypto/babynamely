@@ -5,6 +5,7 @@ import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
 import { DataFeedback } from "@/components/DataFeedback";
+import { EmbedButton } from "@/components/EmbedButton";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -191,7 +192,9 @@ export default async function NamePage({ params }: Props) {
         </section>
       )}
 
-      <DataFeedback />
+      <EmbedButton url="https://nameblooms.com" title="Data from NameBlooms" site="NameBlooms" siteUrl="https://nameblooms.com" />
+
+          <DataFeedback />
 
           <section className="mt-8 p-6 bg-pink-50 rounded-xl border border-pink-100">
         <h3 className="text-lg font-semibold text-pink-900 mb-3">Preparing for Your Little One?</h3>
