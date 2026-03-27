@@ -28,14 +28,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Comparison pages (up to 45,000 most popular)
-  const comparisons = getTopComparisons(45000);
+  const comparisons = getTopComparisons(30000);
   const comparePages: MetadataRoute.Sitemap = comparisons.map((p) => {
     const [a, b] = [p.slugA, p.slugB].sort();
     return { url: `${SITE_URL}/compare/${a}-vs-${b}`, changeFrequency: "monthly" as const, priority: 0.5 };
   });
 
   // Middle name pages
-  const middleNames = getTopNamesForMiddleNames(10000);
+  const middleNames = getTopNamesForMiddleNames(5000);
   const middlePages: MetadataRoute.Sitemap = middleNames.map((n) => ({
     url: `${SITE_URL}/middle-names/${n.slug}/`,
     changeFrequency: "monthly" as const,
