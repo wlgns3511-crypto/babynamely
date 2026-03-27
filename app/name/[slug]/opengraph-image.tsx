@@ -15,7 +15,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   if (!n) {
     return new ImageResponse(
       <div style={{ display: 'flex', width: '100%', height: '100%', backgroundColor: '#db2777', color: 'white', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
-        <div style={{ fontSize: 48 }}>NAMEBLOOMS</div>
+        <div style={{ display: 'flex', fontSize: 48 }}>NAMEBLOOMS</div>
       </div>,
       { ...size }
     );
@@ -39,21 +39,21 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 18, color: accentColor, fontWeight: 700, letterSpacing: 2 }}>NAMEBLOOMS</div>
-          <div style={{ fontSize: 72, fontWeight: 900, color: '#1e1e2e', marginTop: 8, lineHeight: 1 }}>
+          <div style={{ display: 'flex', fontSize: 18, color: accentColor, fontWeight: 700, letterSpacing: 2 }}>NAMEBLOOMS</div>
+          <div style={{ display: 'flex', fontSize: 72, fontWeight: 900, color: '#1e1e2e', marginTop: 8, lineHeight: 1 }}>
             {n.name}
           </div>
           {n.meaning && (
-            <div style={{ fontSize: 22, color: '#475569', marginTop: 10, fontStyle: 'italic' }}>
+            <div style={{ display: 'flex', fontSize: 22, color: '#475569', marginTop: 10, fontStyle: 'italic' }}>
               &ldquo;{n.meaning}&rdquo;
             </div>
           )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: cardBg, borderRadius: 16, padding: '16px 28px', border: `2px solid ${cardBorder}` }}>
-          <div style={{ fontSize: 14, color: accentColor, fontWeight: 600, marginBottom: 6 }}>Gender</div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: accentColor }}>{isBoy ? 'Boy' : 'Girl'}</div>
+          <div style={{ display: 'flex', fontSize: 14, color: accentColor, fontWeight: 600, marginBottom: 6 }}>Gender</div>
+          <div style={{ display: 'flex', fontSize: 32, fontWeight: 800, color: accentColor }}>{isBoy ? 'Boy' : 'Girl'}</div>
           {n.origin && (
-            <div style={{ fontSize: 16, color: '#64748b', marginTop: 4 }}>{n.origin} origin</div>
+            <div style={{ display: 'flex', fontSize: 16, color: '#64748b', marginTop: 4 }}>{n.origin} origin</div>
           )}
         </div>
       </div>
@@ -63,8 +63,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
           {details.map((d) => (
             <div key={d.label} style={{ display: 'flex', flexDirection: 'column', flex: 1, backgroundColor: 'white', borderRadius: 12, padding: '18px 16px', border: `2px solid ${cardBorder}`, alignItems: 'center' }}>
-              <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>{d.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#1e1e2e', textAlign: 'center' }}>{d.value}</div>
+              <div style={{ display: 'flex', fontSize: 13, color: '#94a3b8', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>{d.label}</div>
+              <div style={{ display: 'flex', fontSize: 22, fontWeight: 800, color: '#1e1e2e', textAlign: 'center' }}>{d.value}</div>
             </div>
           ))}
         </div>
@@ -75,7 +75,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#94a3b8' }}>
-        <div style={{ color: accentColor, fontWeight: 600 }}>nameblooms.com</div>
+        <div style={{ display: 'flex', color: accentColor, fontWeight: 600 }}>nameblooms.com</div>
         <div>Baby Names · Meanings · Origins · Popularity</div>
       </div>
     </div>,
