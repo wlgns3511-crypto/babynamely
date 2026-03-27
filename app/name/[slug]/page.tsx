@@ -6,6 +6,7 @@ import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
 import { DataFeedback } from "@/components/DataFeedback";
 import { EmbedButton } from "@/components/EmbedButton";
+import { FreshnessTag } from "@/components/FreshnessTag";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -192,7 +193,9 @@ export default async function NamePage({ params }: Props) {
         </section>
       )}
 
-      <EmbedButton url="https://nameblooms.com" title="Data from NameBlooms" site="NameBlooms" siteUrl="https://nameblooms.com" />
+      <FreshnessTag source="Social Security Administration" />
+
+          <EmbedButton url="https://nameblooms.com" title="Data from NameBlooms" site="NameBlooms" siteUrl="https://nameblooms.com" />
 
           <DataFeedback />
 
