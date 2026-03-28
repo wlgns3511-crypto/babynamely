@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   trailingSlash: true,
+  serverExternalPackages: ["better-sqlite3"],
+  outputFileTracingIncludes: {
+    "/**": ["./data/**"],
+  },
   async headers() {
     return [
       {
