@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames } from "@/lib/db";
 import { formatPct, genderBg } from "@/lib/format";
+import { AdSlot } from "@/components/AdSlot";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
 export const dynamicParams = true;
@@ -114,6 +115,8 @@ export default async function ComparePage({ params }: Props) {
           </table>
         </div>
       </section>
+
+      <AdSlot id="compare-mid" />
 
       {(similarA.length > 0 || similarB.length > 0) && (
         <section className="mb-8">

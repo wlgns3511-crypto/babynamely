@@ -1,5 +1,6 @@
 import { getPopularNames, countNames, getAllOrigins } from "@/lib/db";
 import { genderColor } from "@/lib/format";
+import { AdSlot } from "@/components/AdSlot";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 
 export default function Home() {
@@ -29,6 +30,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <AdSlot id="home-after-letters" />
 
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         <section>
