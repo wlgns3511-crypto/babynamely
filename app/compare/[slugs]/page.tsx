@@ -5,6 +5,7 @@ import { formatPct, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
 export const dynamicParams = true;
+export const revalidate = 86400; // 24시간 ISR 캐시
 
 interface Props { params: Promise<{ slugs: string }> }
 
