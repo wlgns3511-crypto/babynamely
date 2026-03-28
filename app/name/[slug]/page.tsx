@@ -203,6 +203,15 @@ export default async function NamePage({ params }: Props) {
 
           <EmbedButton url="https://nameblooms.com" title="Data from NameBlooms" site="NameBlooms" siteUrl="https://nameblooms.com" />
 
+          {/* Related Data Resources */}
+          <section className="mt-8 p-4 bg-slate-50 rounded-lg">
+            <h3 className="text-sm font-semibold text-slate-500 mb-2">Related Data Resources</h3>
+            <div className="flex flex-wrap gap-3 text-sm">
+              <a href="https://vocabwize.com" className="text-purple-600 hover:underline">VocabWize - Word definitions &rarr;</a>
+              <a href="https://degreewize.com" className="text-purple-600 hover:underline">DegreeWize - College data &rarr;</a>
+            </div>
+          </section>
+
           <DataFeedback />
 
           <section className="mt-8 p-6 bg-pink-50 rounded-xl border border-pink-100">
