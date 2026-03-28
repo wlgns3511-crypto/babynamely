@@ -5,9 +5,16 @@ const DB_PATH = path.join(process.cwd(), 'data', 'names.db');
 let _db: Database.Database | null = null;
 
 function getDb(): Database.Database {
-  if (!_db) {
-    _db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
+  if (_db) {
+    try {
+      // 연결이 살아있는지 확인
+      _db.prepare('SELECT 1').get();
+      return _db;
+    } catch {
+      _db = null;
+    }
   }
+  _db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
   return _db;
 }
 
