@@ -4,6 +4,7 @@ import { getNameBySlug, getAllNames, getPopularity, getSimilarNames } from "@/li
 import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
+import { AdSlot } from "@/components/AdSlot";
 import { DataFeedback } from "@/components/DataFeedback";
 import { EmbedButton } from "@/components/EmbedButton";
 import { FreshnessTag } from "@/components/FreshnessTag";
@@ -162,6 +163,8 @@ export default async function NamePage({ params }: Props) {
           Find middle names for {n.name} →
         </a>
       </section>
+
+      <AdSlot id="name-mid" />
 
       {/* Similar Names */}
       {similar.length > 0 && (
