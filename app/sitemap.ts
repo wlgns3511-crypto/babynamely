@@ -11,6 +11,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/compare`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/names/gender/boy`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/names/gender/girl`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_URL}/privacy`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${SITE_URL}/terms`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${SITE_URL}/contact`, changeFrequency: "monthly", priority: 0.5 },
   ];
 
   // Letter pages
