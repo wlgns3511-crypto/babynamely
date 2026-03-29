@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames } from "@/lib/db";
+import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames, getNamesBySameOrigin } from "@/lib/db";
 import { formatPct, genderBg } from "@/lib/format";
 import { AdSlot } from "@/components/AdSlot";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
@@ -120,31 +120,64 @@ export default async function ComparePage({ params }: Props) {
 
       {(similarA.length > 0 || similarB.length > 0) && (
         <section className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Parents Also Consider</h2>
+          <h2 className="text-xl font-bold mb-4">Compare Similar Names</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {similarA.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-2 text-slate-700">If you like {a.name}, also consider:</h3>
+                <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">Similar to {a.name}</h3>
                 <div className="flex flex-wrap gap-2">
-                  {similarA.map(n => (
-                    <a key={n.slug} href={`/name/${n.slug}`} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm hover:bg-purple-100">{n.name}</a>
-                  ))}
+                  {similarA.map(n => {
+                    const [x, y] = [a.slug, n.slug].sort();
+                    return (
+                      <a key={n.slug} href={`/compare/${x}-vs-${y}`} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm hover:bg-purple-100">
+                        {a.name} vs {n.name}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
             {similarB.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-2 text-slate-700">If you like {b.name}, also consider:</h3>
+                <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">Similar to {b.name}</h3>
                 <div className="flex flex-wrap gap-2">
-                  {similarB.map(n => (
-                    <a key={n.slug} href={`/name/${n.slug}`} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100">{n.name}</a>
-                  ))}
+                  {similarB.map(n => {
+                    const [x, y] = [b.slug, n.slug].sort();
+                    return (
+                      <a key={n.slug} href={`/compare/${x}-vs-${y}`} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100">
+                        {b.name} vs {n.name}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
           </div>
         </section>
       )}
+
+      {/* Same origin comparisons */}
+      {(() => {
+        const originNames = a.origin ? getNamesBySameOrigin(a.slug, a.origin, a.gender, 4)
+          .filter(n => n.slug !== b.slug) : [];
+        if (originNames.length === 0) return null;
+        return (
+          <section className="mb-8">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">More {a.origin} name comparisons</h3>
+            <div className="flex flex-wrap gap-2">
+              {originNames.map(n => {
+                const [x, y] = [a.slug, n.slug].sort();
+                return (
+                  <a key={n.slug} href={`/compare/${x}-vs-${y}`}
+                    className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-purple-50">
+                    {a.name} vs {n.name}
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       <section className="mt-8 mb-8">
         <h2 className="text-xl font-bold mb-4">FAQ</h2>

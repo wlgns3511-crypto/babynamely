@@ -177,3 +177,16 @@ export function getPopularBoyNames(limit = 10): BabyName[] {
 export function getPopularGirlNames(limit = 10): BabyName[] {
   return getDb().prepare('SELECT * FROM names WHERE gender = ? ORDER BY peak_pct DESC LIMIT ?').all('girl', limit) as BabyName[];
 }
+
+export function getNamesBySameOrigin(slug: string, origin: string | null, gender: string, limit = 6): BabyName[] {
+  if (!origin) return [];
+  return getDb().prepare(
+    'SELECT * FROM names WHERE origin = ? AND gender = ? AND slug != ? ORDER BY peak_pct DESC LIMIT ?'
+  ).all(origin, gender, slug, limit) as BabyName[];
+}
+
+export function getPopularNamesByGender(gender: string, excludeSlug: string, limit = 6): BabyName[] {
+  return getDb().prepare(
+    'SELECT * FROM names WHERE gender = ? AND slug != ? ORDER BY peak_pct DESC LIMIT ?'
+  ).all(gender, excludeSlug, limit) as BabyName[];
+}

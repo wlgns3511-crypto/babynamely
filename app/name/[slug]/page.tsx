@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getAllNames, getPopularity, getSimilarNames } from "@/lib/db";
+import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin } from "@/lib/db";
 import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
@@ -171,16 +171,62 @@ export default async function NamePage({ params }: Props) {
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-3">Similar Names</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {similar.map((s) => (
-              <a key={s.slug} href={`/name/${s.slug}`}
-                className="p-3 rounded-lg border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-center">
-                <div className="font-medium">{s.name}</div>
-                {s.meaning && <div className="text-xs text-slate-400 mt-1">{s.meaning}</div>}
-              </a>
-            ))}
+            {similar.map((s) => {
+              const [x, y] = [slug, s.slug].sort();
+              return (
+                <div key={s.slug} className="p-3 rounded-lg border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-center">
+                  <a href={`/name/${s.slug}`} className="font-medium hover:underline">{s.name}</a>
+                  {s.meaning && <div className="text-xs text-slate-400 mt-1">{s.meaning}</div>}
+                  <a href={`/compare/${x}-vs-${y}`} className="text-xs text-purple-500 hover:underline mt-1 block">Compare →</a>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
+
+      {/* Compare with popular names */}
+      {(() => {
+        const popular = getPopularNamesByGender(n.gender, slug, 6);
+        const sameOrigin = getNamesBySameOrigin(slug, n.origin, n.gender, 4);
+        return (
+          <section className="mb-8">
+            <h2 className="text-xl font-bold mb-3">Compare {n.name}</h2>
+            {sameOrigin.length > 0 && (
+              <>
+                <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">
+                  vs Other {n.origin} Names
+                </h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {sameOrigin.map((s) => {
+                    const [x, y] = [slug, s.slug].sort();
+                    return (
+                      <a key={s.slug} href={`/compare/${x}-vs-${y}`}
+                        className="text-sm px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full">
+                        vs {s.name}
+                      </a>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">
+              vs Most Popular {n.gender === 'boy' ? 'Boy' : 'Girl'} Names
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {popular.map((s) => {
+                const [x, y] = [slug, s.slug].sort();
+                return (
+                  <a key={s.slug} href={`/compare/${x}-vs-${y}`}
+                    className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-purple-700 rounded-full">
+                    vs {s.name}
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* FAQ */}
       {faqs.length > 0 && (
