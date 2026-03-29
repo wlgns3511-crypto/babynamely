@@ -49,6 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <a href="/names/gender/boy" className="hover:text-blue-600">Boy Names</a>
               <a href="/names/gender/girl" className="hover:text-pink-600">Girl Names</a>
               <a href="/compare" className="hover:text-purple-600">Compare</a>
+              <a href="/blog/" className="hover:text-purple-600">Guides</a>
               <a href="/es/" className="text-slate-400 hover:text-purple-600 text-xs">ES</a>
             </nav>
           </div>

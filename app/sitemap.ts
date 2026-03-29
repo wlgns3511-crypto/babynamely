@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 import { getAllNames, getTopComparisons, getTopNamesForMiddleNames } from "@/lib/db";
+import { getAllPosts } from "@/lib/blog";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nameblooms.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const names = getAllNames();
+  const posts = getAllPosts();
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "monthly", priority: 1.0 },
@@ -46,5 +48,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...staticPages, ...letters, ...namePages, ...comparePages, ...middlePages];
+  return [
+    ...staticPages,
+    { url: `${SITE_URL}/blog/`, changeFrequency: "weekly" as const, priority: 0.8 },
+    ...posts.map((p) => ({
+      url: `${SITE_URL}/blog/${p.slug}/`,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+      lastModified: p.updatedAt ?? p.publishedAt,
+    })),
+    ...letters,
+    ...namePages,
+    ...comparePages,
+    ...middlePages,
+  ];
 }
