@@ -1,0 +1,26 @@
+{
+  "common": {
+    "home": "Home",
+    "boyNames": "Boy Names",
+    "girlNames": "Girl Names",
+    "compare": "Compare",
+    "about": "About",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "contact": "Contact",
+    "allRightsReserved": "All rights reserved.",
+    "langSwitch": "Español",
+    "langSwitchPrefix": "/es"
+  },
+  "name": {
+    "meaning": "Meaning",
+    "origin": "Origin",
+    "popularity": "Popularity",
+    "peakYear": "Peak Year",
+    "peakPopularity": "Peak Popularity",
+    "similarNames": "Similar Names",
+    "culturalBackground": "Cultural Background",
+    "namingTips": "Naming Tips",
+    "faq": "Frequently Asked Questions"
+  }
+}

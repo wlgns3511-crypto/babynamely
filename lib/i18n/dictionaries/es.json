@@ -1,0 +1,26 @@
+{
+  "common": {
+    "home": "Inicio",
+    "boyNames": "Nombres de Niño",
+    "girlNames": "Nombres de Niña",
+    "compare": "Comparar",
+    "about": "Acerca de",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "contact": "Contacto",
+    "allRightsReserved": "Todos los derechos reservados.",
+    "langSwitch": "English",
+    "langSwitchPrefix": ""
+  },
+  "name": {
+    "meaning": "Significado del Nombre",
+    "origin": "Origen",
+    "popularity": "Popularidad",
+    "peakYear": "Año Pico",
+    "peakPopularity": "Popularidad Máxima",
+    "similarNames": "Nombres Similares",
+    "culturalBackground": "Contexto Cultural",
+    "namingTips": "Consejos para Nombres",
+    "faq": "Preguntas Frecuentes"
+  }
+}
