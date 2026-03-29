@@ -21,6 +21,25 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-SYJYYVM75P" />
         <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SYJYYVM75P');` }} />
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5724806562146685" crossOrigin="anonymous" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              "name": "NameBlooms",
+              "url": "https://nameblooms.com",
+              "description": "Discover the perfect baby name. Explore 6,000+ names with meanings, origins, popularity trends since 1880, and side-by-side comparisons.",
+              "inLanguage": "en-US"
+            },
+            {
+              "@type": "Organization",
+              "name": "NameBlooms",
+              "url": "https://nameblooms.com",
+              "description": "Discover the perfect baby name. Explore 6,000+ names with meanings, origins, popularity trends since 1880, and side-by-side comparisons.",
+              "sameAs": []
+            }
+          ]
+        }) }} />
       </head>
       <body className={`${inter.className} antialiased bg-white text-slate-900 min-h-screen flex flex-col`}>
         <header className="border-b border-slate-200">
