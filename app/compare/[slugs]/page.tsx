@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames, getNamesBySameOrigin } from "@/lib/db";
 import { formatPct, genderBg } from "@/lib/format";
 import { AdSlot } from "@/components/AdSlot";
+import { ComparisonBar } from "@/components/ComparisonBar";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
 export const dynamicParams = true;
@@ -115,6 +116,33 @@ export default async function ComparePage({ params }: Props) {
           </table>
         </div>
       </section>
+
+      {(a.peak_pct != null || b.peak_pct != null) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", margin: "24px 0" }}>
+          <div>
+            <h3 className="text-sm font-medium text-slate-600 mb-2">Peak Popularity</h3>
+            <ComparisonBar
+              bars={[
+                ...(a.peak_pct != null ? [{ label: a.name, value: a.peak_pct }] : []),
+                ...(b.peak_pct != null ? [{ label: b.name, value: b.peak_pct }] : []),
+              ]}
+              format={(v) => formatPct(v)}
+            />
+          </div>
+          {(a.total_records != null || b.total_records != null) && (
+            <div>
+              <h3 className="text-sm font-medium text-slate-600 mb-2">Total Records</h3>
+              <ComparisonBar
+                bars={[
+                  ...(a.total_records != null ? [{ label: a.name, value: a.total_records }] : []),
+                  ...(b.total_records != null ? [{ label: b.name, value: b.total_records }] : []),
+                ]}
+                format={(v) => v.toLocaleString()}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <AdSlot id="compare-mid" />
 
