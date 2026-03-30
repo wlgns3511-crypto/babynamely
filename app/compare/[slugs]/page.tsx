@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames, getNamesBySameOrigin } from "@/lib/db";
+import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames, getNamesBySameOrigin, getRandomNames } from "@/lib/db";
 import { formatPct, genderBg } from "@/lib/format";
 import { AdSlot } from "@/components/AdSlot";
 import { ComparisonBar } from "@/components/ComparisonBar";
@@ -216,6 +216,36 @@ export default async function ComparePage({ params }: Props) {
           </details>
         ))}
       </section>
+
+      {/* Explore More Comparisons */}
+      {(() => {
+        const randomPool = getRandomNames(30);
+        const pairs: { nameA: string; nameB: string; slug: string }[] = [];
+        for (let i = 0; i < randomPool.length - 1 && pairs.length < 15; i++) {
+          const r1 = randomPool[i];
+          const r2 = randomPool[i + 1];
+          if (r1.slug === r2.slug) continue;
+          const [x, y] = [r1.slug, r2.slug].sort();
+          const pairSlug = `${x}-vs-${y}`;
+          if (pairSlug === slugs) continue;
+          const [nameX, nameY] = r1.slug === x ? [r1.name, r2.name] : [r2.name, r1.name];
+          pairs.push({ nameA: nameX, nameB: nameY, slug: pairSlug });
+        }
+        if (pairs.length === 0) return null;
+        return (
+          <section className="mt-8 mb-8">
+            <h2 className="text-xl font-bold mb-4">Explore More Comparisons</h2>
+            <div className="flex flex-wrap gap-2">
+              {pairs.map((p) => (
+                <a key={p.slug} href={`/compare/${p.slug}`}
+                  className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-purple-700 rounded-full">
+                  {p.nameA} vs {p.nameB}
+                </a>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
       <footer className="mt-12 pt-8 border-t border-slate-200 text-xs text-slate-400 space-y-2">
         <p>Popular baby name comparisons: {a.name} vs {b.name}, best baby names 2025, unique baby names, {a.name} name meaning, {b.name} name meaning, baby name popularity trends, {a.origin || 'classic'} baby names, {b.origin || 'classic'} baby names</p>

@@ -190,3 +190,44 @@ export function getPopularNamesByGender(gender: string, excludeSlug: string, lim
     'SELECT * FROM names WHERE gender = ? AND slug != ? ORDER BY peak_pct DESC LIMIT ?'
   ).all(gender, excludeSlug, limit) as BabyName[];
 }
+
+export function getRandomNames(limit = 20): BabyName[] {
+  return getDb().prepare('SELECT * FROM names ORDER BY RANDOM() LIMIT ?').all(limit) as BabyName[];
+}
+
+/** Get current ISO week number (1-52) */
+export function getCurrentWeek(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const diff = now.getTime() - start.getTime();
+  const oneWeek = 7 * 24 * 60 * 60 * 1000;
+  return Math.ceil((diff / oneWeek + start.getDay() + 1) / 7);
+}
+
+export function searchNames(query: string, limit = 30): BabyName[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return getDb().prepare(`
+    SELECT * FROM names WHERE slug LIKE ? OR LOWER(name) LIKE ? ORDER BY peak_pct DESC LIMIT ?
+  `).all(q + '%', q + '%', limit) as BabyName[];
+}
+
+export function getRotatingComparisons(limit = 2000): { slugA: string; slugB: string; nameA: string; nameB: string }[] {
+  const week = getCurrentWeek();
+  const offset = ((week - 1) % 50) * 200;
+  const top = getDb().prepare(
+    'SELECT slug, name FROM names ORDER BY peak_pct DESC LIMIT 200 OFFSET ?'
+  ).all(offset) as { slug: string; name: string }[];
+
+  const pairs: { slugA: string; slugB: string; nameA: string; nameB: string }[] = [];
+  for (let i = 0; i < top.length && pairs.length < limit; i++) {
+    for (let j = i + 1; j < top.length && pairs.length < limit; j++) {
+      if (top[i].slug < top[j].slug) {
+        pairs.push({ slugA: top[i].slug, slugB: top[j].slug, nameA: top[i].name, nameB: top[j].name });
+      } else {
+        pairs.push({ slugA: top[j].slug, slugB: top[i].slug, nameA: top[j].name, nameB: top[i].name });
+      }
+    }
+  }
+  return pairs;
+}

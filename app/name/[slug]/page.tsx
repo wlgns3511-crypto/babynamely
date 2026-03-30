@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin } from "@/lib/db";
+import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getRandomNames } from "@/lib/db";
 import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
@@ -9,6 +9,7 @@ import { DataFeedback } from "@/components/DataFeedback";
 import { EmbedButton } from "@/components/EmbedButton";
 import { FreshnessTag } from "@/components/FreshnessTag";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
+import { AuthorBox } from "@/components/AuthorBox";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -243,7 +244,30 @@ export default async function NamePage({ params }: Props) {
         </section>
       )}
 
+      {/* Discover More Name Comparisons */}
+      {(() => {
+        const randomNames = getRandomNames(15).filter(r => r.slug !== slug);
+        return (
+          <section className="mt-8 mb-8">
+            <h2 className="text-xl font-bold mb-4">Discover More Name Comparisons</h2>
+            <div className="flex flex-wrap gap-2">
+              {randomNames.map((r) => {
+                const [x, y] = [slug, r.slug].sort();
+                return (
+                  <a key={r.slug} href={`/compare/${x}-vs-${y}`}
+                    className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-purple-700 rounded-full">
+                    {n.name} vs {r.name}
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
+
       <NamePopularityPredictor />
+
+      <AuthorBox />
 
       <FreshnessTag source="Social Security Administration" />
 
