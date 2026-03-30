@@ -10,6 +10,10 @@ import { EmbedButton } from "@/components/EmbedButton";
 import { FreshnessTag } from "@/components/FreshnessTag";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 import { AuthorBox } from "@/components/AuthorBox";
+import { EditorNote } from "@/components/EditorNote";
+import { DidYouKnow } from "@/components/DidYouKnow";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
+import { CrossSiteLinks } from "@/components/CrossSiteLinks";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -83,6 +87,8 @@ export default async function NamePage({ params }: Props) {
         <span className="text-sm text-slate-600">{trendLabels[analysis.trendStatus]}</span>
         <span className="text-xs text-slate-400">• {analysis.syllableCount} syllable{analysis.syllableCount > 1 ? "s" : ""} • {n.name.length} letters</span>
       </div>
+
+      <EditorNote note={`${n.name} is ${n.origin ? `a name of ${n.origin} origin` : 'a name'}${n.peak_year ? ` that peaked in popularity around ${n.peak_year}` : ''}. ${n.meaning ? `Its meaning, "${n.meaning}", reflects its cultural roots.` : 'Explore its trends and cultural background below.'}`} />
 
       {/* Info card */}
       <div className={`rounded-lg p-6 mb-6 ${genderBg(n.gender)}`}>
@@ -164,6 +170,8 @@ export default async function NamePage({ params }: Props) {
           Find middle names for {n.name} →
         </a>
       </section>
+
+      <DidYouKnow fact={`In the United States, the Social Security Administration has recorded baby names since 1880. ${n.name.length <= 4 ? "Short names (4 letters or fewer) have been trending upward in recent decades." : "Longer names often carry rich etymological histories spanning multiple cultures."} There are over 100,000 unique baby names in the SSA database.`} />
 
       <AdSlot id="name-mid" />
 
@@ -292,8 +300,23 @@ export default async function NamePage({ params }: Props) {
         </p>
       </section>
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
-      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />}
+      <DataSourceBadge sources={[
+        { name: "SSA", url: "https://www.ssa.gov/oact/babynames/" },
+        { name: "Behind the Name", url: "https://www.behindthename.com" },
+      ]} />
+
+      <CrossSiteLinks current="BabyNamely" />
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        ...breadcrumbSchema(breadcrumbs),
+        dateModified: "2026-03-31",
+        author: { "@type": "Organization", name: "DataPeek" },
+      }) }} />
+      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        ...faqSchema(faqs),
+        dateModified: "2026-03-31",
+        author: { "@type": "Organization", name: "DataPeek" },
+      }) }} />}
     </div>
   );
 }
