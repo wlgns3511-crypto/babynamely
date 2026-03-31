@@ -85,7 +85,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <a href="https://caloriewize.com" className="hover:text-purple-600">Nutrition</a>
               </div>
             </div>
-            <p className="mt-1">\&copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.</p>
+            <p className="mt-1">&copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.</p>
           </div>
         </footer>
       </body>
