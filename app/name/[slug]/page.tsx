@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getRandomNames } from "@/lib/db";
+import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getRandomNames, getNameStats, getNameRank, getLatestPopularity } from "@/lib/db";
 import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
@@ -120,6 +120,67 @@ export default async function NamePage({ params }: Props) {
         </div>
       </div>
 
+      {/* Data Insights */}
+      {(() => {
+        const stats = getNameStats();
+        const rank = getNameRank(slug);
+        const latest = getLatestPopularity(slug);
+        const insights: string[] = [];
+
+        if (n.peak_year) {
+          const currentYear = new Date().getFullYear();
+          const yearsSincePeak = currentYear - n.peak_year;
+          let trend = 'steady';
+          if (latest && n.peak_pct) {
+            if (latest.pct < n.peak_pct * 0.5) trend = 'declining';
+            else if (latest.pct > n.peak_pct * 0.8) trend = 'still strong';
+            else trend = 'gradually declining';
+          }
+          insights.push(`${n.name} peaked in popularity in ${n.peak_year} (${yearsSincePeak} years ago) and has been ${trend} since then`);
+        }
+
+        if (n.peak_pct != null && stats.avgPeakPct != null) {
+          const ratio = n.peak_pct / stats.avgPeakPct;
+          if (ratio > 1.5) {
+            insights.push(`${n.name} is ${ratio.toFixed(1)}x more common than the average baby name at its peak`);
+          } else if (ratio < 0.5) {
+            insights.push(`${n.name} is a relatively rare name, reaching only ${(ratio * 100).toFixed(0)}% of the average name's peak popularity`);
+          } else {
+            insights.push(`${n.name} has about average peak popularity compared to other tracked names`);
+          }
+        }
+
+        if (rank != null && stats.totalNames > 0) {
+          const percentile = ((1 - rank / stats.totalNames) * 100).toFixed(0);
+          insights.push(`Ranked #${rank.toLocaleString()} out of ${stats.totalNames.toLocaleString()} names tracked (top ${percentile}% by peak popularity)`);
+        }
+
+        if (latest && popularity.length > 1) {
+          const earliest = popularity[0];
+          if (latest.pct > earliest.pct * 2) {
+            insights.push(`Usage has grown significantly since ${earliest.year}, more than doubling in frequency`);
+          } else if (latest.pct < earliest.pct * 0.3) {
+            insights.push(`Usage has declined significantly since ${earliest.year}, falling to less than a third of its original frequency`);
+          }
+        }
+
+        if (insights.length === 0) return null;
+        return (
+          <section className={`mb-8 rounded-xl p-5 border ${n.gender === 'boy' ? 'bg-blue-50 border-blue-100' : 'bg-pink-50 border-pink-100'}`}>
+            <h2 className={`text-lg font-bold mb-3 ${n.gender === 'boy' ? 'text-blue-900' : 'text-pink-900'}`}>Name Insights: {n.name}</h2>
+            <ul className="space-y-2">
+              {insights.map((insight, i) => (
+                <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                  <span className={`mt-0.5 font-bold ${n.gender === 'boy' ? 'text-blue-500' : 'text-pink-500'}`}>&bull;</span>
+                  {insight}
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-slate-400 mt-3">Based on {stats.totalNames.toLocaleString()} names from SSA records (1880-present).</p>
+          </section>
+        );
+      })()}
+
       {/* Trend Analysis */}
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-3">Popularity Trend</h2>
@@ -172,6 +233,12 @@ export default async function NamePage({ params }: Props) {
       </section>
 
       <DidYouKnow fact={`In the United States, the Social Security Administration has recorded baby names since 1880. ${n.name.length <= 4 ? "Short names (4 letters or fewer) have been trending upward in recent decades." : "Longer names often carry rich etymological histories spanning multiple cultures."} There are over 100,000 unique baby names in the SSA database.`} />
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 my-6 text-sm">
+        <p className="text-slate-600">
+          <strong>Related:</strong> Explore more data: <a href="https://zippeek.com" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">ZIP code demographics</a> to find family-friendly neighborhoods.
+        </p>
+      </div>
 
       <AdSlot id="name-mid" />
 

@@ -204,6 +204,30 @@ export function getCurrentWeek(): number {
   return Math.ceil((diff / oneWeek + start.getDay() + 1) / 7);
 }
 
+// --- National stats for insight comparisons ---
+
+export function getNameStats(): {
+  totalNames: number;
+  avgPeakPct: number | null;
+} {
+  return getDb().prepare(`
+    SELECT COUNT(*) as totalNames, AVG(peak_pct) as avgPeakPct FROM names
+  `).get() as { totalNames: number; avgPeakPct: number | null };
+}
+
+export function getNameRank(slug: string): number | null {
+  const row = getDb().prepare(`
+    SELECT COUNT(*) + 1 as rank FROM names WHERE peak_pct > (SELECT peak_pct FROM names WHERE slug = ?)
+  `).get(slug) as { rank: number } | undefined;
+  return row?.rank ?? null;
+}
+
+export function getLatestPopularity(slug: string): PopularityRow | null {
+  return (getDb().prepare(
+    'SELECT * FROM popularity WHERE slug = ? ORDER BY year DESC LIMIT 1'
+  ).get(slug) as PopularityRow | undefined) ?? null;
+}
+
 export function searchNames(query: string, limit = 30): BabyName[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];

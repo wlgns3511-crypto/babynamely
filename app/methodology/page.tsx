@@ -54,6 +54,12 @@ export default function MethodologyPage() {
         If you find inaccuracies or have suggestions for improvement, please 
         <a href="/contact">contact us</a>. We value community input in maintaining data quality.
       </p>
+    
+      <h2>Official Data Sources</h2>
+      <ul>
+        <li><a href="https://www.ssa.gov/oact/babynames/" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">U.S. Social Security Administration</a></li>
+        <li><a href="https://data.census.gov/" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">U.S. Census Bureau</a></li>
+      </ul>
     </article>
   );
 }
