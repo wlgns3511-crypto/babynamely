@@ -31,14 +31,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               "name": "NameBlooms",
               "url": "https://nameblooms.com",
               "description": "Discover the perfect baby name. Explore 6,000+ names with meanings, origins, popularity trends since 1880, and side-by-side comparisons.",
-              "inLanguage": "en-US"
+              "inLanguage": "en-US",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://nameblooms.com/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
             },
             {
               "@type": "Organization",
               "name": "NameBlooms",
               "url": "https://nameblooms.com",
               "description": "Discover the perfect baby name. Explore 6,000+ names with meanings, origins, popularity trends since 1880, and side-by-side comparisons.",
-              "sameAs": []
+              "sameAs": ["https://vocabwize.com", "https://vocablibre.com", "https://wortwize.com", "https://kalimawize.com", "https://dicionariowize.com", "https://kotobapeek.com", "https://salarybycity.com", "https://netpaypeek.com", "https://wagepeek.com", "https://costbycity.com", "https://fairrentwize.com", "https://propertytaxpeek.com", "https://degreewize.com", "https://myschoolpeek.com", "https://medcheckwize.com", "https://medcostpeek.com", "https://eldercarepeek.com", "https://ingredipeek.com", "https://caloriewize.com", "https://powerbillpeek.com", "https://sunpowerpeek.com", "https://shipcalcwize.com", "https://tariffpeek.com", "https://visapeek.com", "https://zippeek.com", "https://calcpeek.com", "https://datapeekfacts.com", "https://guidebycity.com"]
             }
           ]
         }) }} />
