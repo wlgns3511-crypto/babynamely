@@ -6,7 +6,7 @@ import { formatPct, genderBg } from "@/lib/format";
 interface Props { params: Promise<{ slug: string }> }
 
 export const dynamicParams = true;
-export const revalidate = 86400;
+export const revalidate = false;
 
 export function generateStaticParams() {
   return getAllNames().slice(0, 300).map((n) => ({ slug: n.slug }));

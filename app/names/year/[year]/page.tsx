@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTopNamesForYear, getAvailableYears } from "@/lib/db";
 import { formatPct } from "@/lib/format";
+import { itemListSchema } from "@/lib/schema";
 
 interface Props { params: Promise<{ year: string }> }
 
@@ -30,8 +31,11 @@ export default async function YearPage({ params }: Props) {
   const girls = topNames.filter(n => n.gender === 'girl').slice(0, 25);
   const years = getAvailableYears().filter(y => y % 10 === 0 || y >= 2000);
 
+  const allNames = [...boys, ...girls].map(n => ({ name: n.name, url: `/name/${n.slug}` }));
+
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema(`Most Popular Baby Names in ${year}`, `/names/year/${year}`, allNames)) }} />
       <nav className="text-sm text-slate-500 mb-4">
         <a href="/" className="hover:underline">Home</a> / <span className="text-slate-800">Popular Names in {year}</span>
       </nav>

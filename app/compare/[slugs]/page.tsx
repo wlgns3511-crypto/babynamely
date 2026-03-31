@@ -7,7 +7,7 @@ import { ComparisonBar } from "@/components/ComparisonBar";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
 export const dynamicParams = true;
-export const revalidate = 86400; // 24시간 ISR 캐시
+export const revalidate = false; // 24시간 ISR 캐시
 
 interface Props { params: Promise<{ slugs: string }> }
 

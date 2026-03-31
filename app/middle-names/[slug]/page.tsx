@@ -7,7 +7,7 @@ import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 interface Props { params: Promise<{ slug: string }> }
 
 export const dynamicParams = true;
-export const revalidate = 86400;
+export const revalidate = false;
 
 export async function generateStaticParams() {
   return getTopNamesForMiddleNames(1500).map(n => ({ slug: n.slug }));
