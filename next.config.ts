@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./data/**"],
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.nameblooms.com" }],
+        destination: "https://nameblooms.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
