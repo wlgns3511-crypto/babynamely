@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Expert guides on choosing the perfect baby name: trending names, vintage revivals, unique name strategies, and how both parents can agree on a name they love.",
   alternates: { canonical: "/blog/" },
+  openGraph: { url: "/blog/" },
 };
 
 function formatDate(dateStr: string) {

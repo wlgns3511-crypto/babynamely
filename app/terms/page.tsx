@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   title: "Terms of Service",
   description: "Terms of service for NameBlooms.",
   alternates: { canonical: "/terms/" },
+  openGraph: { url: "/terms/" },
 };
 
 export default function TermsPage() {

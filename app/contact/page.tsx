@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   title: "Contact Us",
   description: "Get in touch with the NameBlooms team.",
   alternates: { canonical: "/contact/" },
+  openGraph: { url: "/contact/" },
 };
 
 export default function ContactPage() {

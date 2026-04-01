@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Search Baby Names — Meanings, Origins & Popularity",
   description: "Search thousands of baby names. Find meanings, origins, and historical popularity trends for any name.",
   alternates: { canonical: "/search" },
+  openGraph: { url: "/search/" },
 };
 
 interface Props {

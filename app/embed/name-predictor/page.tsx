@@ -4,6 +4,7 @@ import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 export const metadata: Metadata = {
   title: "Name Popularity Predictor - Embeddable Widget",
   robots: "noindex, nofollow",
+  openGraph: { url: "/embed/name-predictor/" },
 };
 
 export default function EmbedNamePredictorPage() {

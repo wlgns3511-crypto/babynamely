@@ -4,7 +4,9 @@ import { AdSlot } from "@/components/AdSlot";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { alternates: { canonical: "/" } };
+export const metadata: Metadata = { alternates: { canonical: "/" },
+  openGraph: { url: "/" },
+};
 
 
 export default function Home() {

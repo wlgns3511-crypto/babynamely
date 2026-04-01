@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   title: "Disclaimer",
   description: "Disclaimer and limitations of liability for NameBlooms.",
   alternates: { canonical: "/disclaimer/" },
+  openGraph: { url: "/disclaimer/" },
 };
 
 export default function DisclaimerPage() {
