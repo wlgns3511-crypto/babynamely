@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Our Methodology",
   description: "Learn how BabyNamely collects, processes, and verifies baby name origins, meanings, and popularity trends.",
+  alternates: { canonical: "/methodology/" },
 };
 
 export default function MethodologyPage() {

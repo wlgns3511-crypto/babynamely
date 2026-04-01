@@ -2,6 +2,10 @@ import { getPopularNames, countNames, getAllOrigins } from "@/lib/db";
 import { genderColor } from "@/lib/format";
 import { AdSlot } from "@/components/AdSlot";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
+
 
 export default function Home() {
   const boyNames = getPopularNames("boy", 20);

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "About NameBlooms",
   description: "Learn about NameBlooms, our mission, and data sources.",
+  alternates: { canonical: "/about/" },
 };
 
 export default function AboutPage() {
