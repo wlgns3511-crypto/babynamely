@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `Best Middle Names for ${n.name} (${n.gender === 'boy' ? 'Boy' : 'Girl'})`,
     description: `Looking for the perfect middle name for ${n.name}? Browse 20 popular middle name ideas that pair beautifully with ${n.name}.`,
     alternates: { canonical: `/middle-names/${slug}/` },
+    openGraph: { url: `/middle-names/${slug}/` },
   };
 }
 

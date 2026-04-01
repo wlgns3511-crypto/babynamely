@@ -18,6 +18,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `Most Popular Baby Names in ${year}`,
     description: `Top baby names in ${year}. See the most popular boy and girl names with popularity data.`,
+    alternates: { canonical: `/names/year/${year}` },
+    openGraph: { url: `/names/year/${year}` },
   };
 }
 

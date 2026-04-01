@@ -14,6 +14,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${cap} Baby Names - Origins & Meanings`,
     description: `Browse baby names of ${cap} origin. Find beautiful ${cap} names with meanings and popularity data.`,
+    alternates: { canonical: `/names/origin/${origin}` },
+    openGraph: { url: `/names/origin/${origin}` },
   };
 }
 

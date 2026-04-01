@@ -33,6 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${a.name} vs ${b.name} - Baby Name Comparison | Which Is Better?`,
     description: `Compare baby names ${a.name} and ${b.name} side by side. Meanings, origins, popularity trends, and which name parents prefer in 2025.`,
     alternates: { canonical: `/compare/${slugs}` },
+    openGraph: { url: `/compare/${slugs}` },
   };
 }
 

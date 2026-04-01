@@ -36,6 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${n.name} — Meaning, Origin, Popularity & Trends`,
     description: `${n.name} is a ${n.gender} name${n.origin ? ` of ${n.origin} origin` : ''}${n.meaning ? ` meaning "${n.meaning}"` : ''}. See popularity trends since 1880, cultural context, naming tips, and similar names.`,
     alternates: { canonical: `/name/${slug}` },
+    openGraph: { url: `/name/${slug}` },
   };
 }
 

@@ -11,7 +11,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { letter } = await params;
   const L = letter.toUpperCase();
-  return { title: `Baby Names Starting With ${L}`, description: `Browse baby names that start with the letter ${L}. See meanings, origins, and popularity.` };
+  return {
+    title: `Baby Names Starting With ${L}`,
+    description: `Browse baby names that start with the letter ${L}. See meanings, origins, and popularity.`,
+    alternates: { canonical: `/names/letter/${letter}` },
+    openGraph: { url: `/names/letter/${letter}` },
+  };
 }
 
 export default async function LetterPage({ params }: Props) {

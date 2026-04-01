@@ -11,7 +11,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { gender } = await params;
   const label = gender === "boy" ? "Boy" : "Girl";
-  return { title: `${label} Baby Names - Complete List`, description: `Browse popular ${label.toLowerCase()} baby names with meanings and origins.` };
+  return {
+    title: `${label} Baby Names - Complete List`,
+    description: `Browse popular ${label.toLowerCase()} baby names with meanings and origins.`,
+    alternates: { canonical: `/names/gender/${gender}` },
+    openGraph: { url: `/names/gender/${gender}` },
+  };
 }
 
 export default async function GenderPage({ params }: Props) {

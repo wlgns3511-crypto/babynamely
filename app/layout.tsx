@@ -11,8 +11,7 @@ export const metadata: Metadata = {
   description: "Discover the perfect baby name. Explore 6,000+ names with meanings, origins, popularity trends since 1880, and side-by-side comparisons.",
   metadataBase: new URL(SITE_URL),
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large" } },
-  alternates: { canonical: "/" },
-  openGraph: { type: "website", siteName: SITE_NAME, url: SITE_URL, locale: "en_US" },
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US" },
   twitter: { card: "summary_large_image" },
   other: { "google-adsense-account": "ca-pub-5724806562146685" },
 };
