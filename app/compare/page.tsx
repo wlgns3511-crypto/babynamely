@@ -1,6 +1,11 @@
 import { getPopularNames } from "@/lib/db";
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Compare Baby Names", description: "Compare baby names side by side." };
+export const metadata: Metadata = {
+  title: "Compare Baby Names",
+  description: "Compare baby names side by side — popularity trends, origins, and meanings.",
+  alternates: { canonical: "https://nameblooms.com/compare/" },
+  openGraph: { title: "Compare Baby Names", description: "Compare baby names side by side — popularity trends, origins, and meanings.", url: "https://nameblooms.com/compare/" },
+};
 export default function ComparePage() {
   const boys = getPopularNames("boy", 15);
   const girls = getPopularNames("girl", 15);
