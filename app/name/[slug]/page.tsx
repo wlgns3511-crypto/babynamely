@@ -14,6 +14,7 @@ import { EditorNote } from "@/components/EditorNote";
 import { DidYouKnow } from "@/components/DidYouKnow";
 import { DataSourceBadge } from "@/components/DataSourceBadge";
 import { CrossSiteLinks } from "@/components/CrossSiteLinks";
+import { InsightCards } from "@/components/InsightCards";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -120,6 +121,8 @@ export default async function NamePage({ params }: Props) {
           )}
         </div>
       </div>
+
+      <InsightCards name={n} />
 
       {/* Data Insights */}
       {(() => {
