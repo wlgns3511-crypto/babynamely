@@ -5,7 +5,7 @@ import { formatPct, genderBg } from "@/lib/format";
 
 interface Props { params: Promise<{ slug: string }> }
 
-export const dynamicParams = true;
+export const dynamicParams = false;
 export const revalidate = false;
 
 export function generateStaticParams() {

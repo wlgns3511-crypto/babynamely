@@ -6,7 +6,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { ComparisonBar } from "@/components/ComparisonBar";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
-export const dynamicParams = true;
+export const dynamicParams = false;
 export const revalidate = false; // 24시간 ISR 캐시
 
 interface Props { params: Promise<{ slugs: string }> }
