@@ -1,16 +1,16 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getMiddleNameSuggestions, getTopNamesForMiddleNames } from "@/lib/db";
+import { getNameBySlug, getMiddleNameSuggestions, getTopNamesForMiddleNames, MIDDLE_NAME_PRERENDER_LIMIT } from "@/lib/db";
 import { genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
 interface Props { params: Promise<{ slug: string }> }
 
-export const dynamicParams = false;
-export const revalidate = false;
+export const dynamicParams = true;
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
-  return getTopNamesForMiddleNames(1500).map(n => ({ slug: n.slug }));
+  return getTopNamesForMiddleNames(MIDDLE_NAME_PRERENDER_LIMIT).map(n => ({ slug: n.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -36,7 +36,7 @@ export default async function MiddleNamesPage({ params }: Props) {
   const faqs = [
     {
       question: `What are good middle names for ${firstName.name}?`,
-      answer: `Popular middle names for ${firstName.name} include ${suggestions.slice(0, 5).map(s => s.name).join(', ')}. These names complement ${firstName.name} in sound and style.`,
+      answer: `Popular middle names for ${firstName.name} include ${suggestions.map(s => s.name).join(', ')}. These names complement ${firstName.name} in sound and style.`,
     },
     {
       question: `How do I choose a middle name for ${firstName.name}?`,
@@ -52,15 +52,15 @@ export default async function MiddleNamesPage({ params }: Props) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema([
         { name: 'Home', url: '/' },
-        { name: firstName.name, url: `/name/${firstName.slug}` },
+        { name: firstName.name, url: `/name/${firstName.slug}/` },
         { name: `Middle Names for ${firstName.name}`, url: `/middle-names/${slug}/` },
       ])) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />
+      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />}
 
       <nav className="text-sm text-slate-500 mb-4">
         <a href="/" className="hover:text-purple-600">Home</a>
         <span className="mx-1">/</span>
-        <a href={`/name/${firstName.slug}`} className="hover:text-purple-600">{firstName.name}</a>
+        <a href={`/name/${firstName.slug}/`} className="hover:text-purple-600">{firstName.name}</a>
         <span className="mx-1">/</span>
         <span className="text-slate-800">Middle Names</span>
       </nav>
@@ -84,7 +84,7 @@ export default async function MiddleNamesPage({ params }: Props) {
                 <span className="text-lg font-semibold">{firstName.name} {s.name}</span>
                 <span className="text-sm text-slate-400 ml-2">#{i + 1}</span>
               </div>
-              <a href={`/name/${s.slug}`} className="text-sm text-purple-600 hover:underline">
+              <a href={`/name/${s.slug}/`} className="text-sm text-purple-600 hover:underline">
                 View {s.name} →
               </a>
             </div>
@@ -122,7 +122,7 @@ export default async function MiddleNamesPage({ params }: Props) {
 
       {/* Back link */}
       <div className="mt-8">
-        <a href={`/name/${firstName.slug}`} className="text-purple-600 hover:underline">
+        <a href={`/name/${firstName.slug}/`} className="text-purple-600 hover:underline">
           ← Back to {firstName.name} details
         </a>
       </div>

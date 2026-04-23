@@ -4,6 +4,8 @@ import { getNamesByOrigin, getAllOrigins } from "@/lib/db";
 
 interface Props { params: Promise<{ origin: string }> }
 
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return getAllOrigins().map((o) => ({ origin: o.toLowerCase() }));
 }
@@ -14,8 +16,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${cap} Baby Names - Origins & Meanings`,
     description: `Browse baby names of ${cap} origin. Find beautiful ${cap} names with meanings and popularity data.`,
-    alternates: { canonical: `/names/origin/${origin}` },
-    openGraph: { url: `/names/origin/${origin}` },
+    alternates: { canonical: `/names/origin/${origin}/` },
+    openGraph: { url: `/names/origin/${origin}/` },
   };
 }
 
@@ -38,7 +40,7 @@ export default async function OriginPage({ params }: Props) {
 
       <div className="flex flex-wrap gap-2 mb-8">
         {origins.map((o) => (
-          <a key={o} href={`/names/origin/${o.toLowerCase()}`}
+          <a key={o} href={`/names/origin/${o.toLowerCase()}/`}
             className={`px-3 py-1 rounded-full text-sm border ${o === cap ? 'bg-purple-600 text-white border-purple-600' : 'border-slate-200 hover:bg-purple-50'}`}>
             {o}
           </a>
@@ -47,7 +49,7 @@ export default async function OriginPage({ params }: Props) {
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
         {names.map((n) => (
-          <a key={n.slug} href={`/name/${n.slug}`} className="p-3 border border-slate-100 rounded-lg hover:bg-purple-50">
+          <a key={n.slug} href={`/name/${n.slug}/`} className="p-3 border border-slate-100 rounded-lg hover:bg-purple-50">
             <div className="font-medium">{n.name}</div>
             {n.meaning && <div className="text-xs text-slate-400 mt-1">{n.meaning}</div>}
             <span className={`text-xs ${n.gender === 'boy' ? 'text-blue-400' : 'text-pink-400'}`}>{n.gender}</span>

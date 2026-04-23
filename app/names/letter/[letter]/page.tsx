@@ -4,6 +4,8 @@ import { getNamesByLetter } from "@/lib/db";
 
 interface Props { params: Promise<{ letter: string }> }
 
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return "abcdefghijklmnopqrstuvwxyz".split("").map((l) => ({ letter: l }));
 }
@@ -14,8 +16,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `Baby Names Starting With ${L}`,
     description: `Browse baby names that start with the letter ${L}. See meanings, origins, and popularity.`,
-    alternates: { canonical: `/names/letter/${letter}` },
-    openGraph: { url: `/names/letter/${letter}` },
+    alternates: { canonical: `/names/letter/${letter}/` },
+    openGraph: { url: `/names/letter/${letter}/` },
   };
 }
 
@@ -31,7 +33,7 @@ export default async function LetterPage({ params }: Props) {
       <p className="text-slate-600 mb-6">{names.length} names found</p>
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
         {names.map((n) => (
-          <a key={n.slug} href={`/name/${n.slug}`} className="p-2 hover:bg-slate-50 rounded border border-slate-100">
+          <a key={n.slug} href={`/name/${n.slug}/`} className="p-2 hover:bg-slate-50 rounded border border-slate-100">
             <span className="font-medium">{n.name}</span>
             <span className={`ml-2 text-xs ${n.gender === 'boy' ? 'text-blue-400' : 'text-pink-400'}`}>{n.gender}</span>
           </a>

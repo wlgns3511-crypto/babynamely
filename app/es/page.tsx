@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default function HomeEs() {
-  const names = getAllNames().slice(0, 40);
+  const names = getAllNames();
 
   return (
     <>
@@ -32,7 +32,7 @@ export default function HomeEs() {
           {names.map((n) => (
             <a
               key={n.slug}
-              href={`/es/name/${n.slug}`}
+              href={`/es/name/${n.slug}/`}
               className="p-3 border border-slate-200 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all text-center"
             >
               <div className="font-medium text-sm">{n.name}</div>

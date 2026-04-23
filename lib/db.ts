@@ -35,6 +35,16 @@ export interface PopularityRow {
   pct: number;
 }
 
+export interface ComparisonPair {
+  slugA: string;
+  slugB: string;
+  nameA: string;
+  nameB: string;
+}
+
+export const COMPARISON_PRERENDER_LIMIT = 100;
+export const MIDDLE_NAME_PRERENDER_LIMIT = 999999;
+
 // --- Name queries ---
 
 export function getNameBySlug(slug: string): BabyName | undefined {
@@ -115,13 +125,13 @@ function hasComparisonsTable(): boolean {
   return !!row;
 }
 
-export function getTopComparisons(limit = 2000): { slugA: string; slugB: string; nameA: string; nameB: string }[] {
+export function getTopComparisons(limit = 2000): ComparisonPair[] {
   if (hasComparisonsTable()) {
     return getDb().prepare(`
       SELECT slugA, slugB, nameA, nameB FROM comparisons
       ORDER BY popularity_score DESC
       LIMIT ?
-    `).all(limit) as { slugA: string; slugB: string; nameA: string; nameB: string }[];
+    `).all(limit) as ComparisonPair[];
   }
 
   // Fallback: generate pairs from top names (legacy)
@@ -129,7 +139,7 @@ export function getTopComparisons(limit = 2000): { slugA: string; slugB: string;
     SELECT slug, name FROM names ORDER BY peak_pct DESC LIMIT 200
   `).all() as { slug: string; name: string }[];
 
-  const pairs: { slugA: string; slugB: string; nameA: string; nameB: string }[] = [];
+  const pairs: ComparisonPair[] = [];
   for (let i = 0; i < topNames.length && pairs.length < limit; i++) {
     for (let j = i + 1; j < topNames.length && pairs.length < limit; j++) {
       if (topNames[i].slug < topNames[j].slug) {
@@ -142,9 +152,62 @@ export function getTopComparisons(limit = 2000): { slugA: string; slugB: string;
   return pairs;
 }
 
+export function getAllComparisons(): ComparisonPair[] {
+  if (hasComparisonsTable()) {
+    return getDb().prepare(`
+      SELECT slugA, slugB, nameA, nameB FROM comparisons
+      ORDER BY popularity_score DESC
+    `).all() as ComparisonPair[];
+  }
+  return getTopComparisons(200000);
+}
+
 export function getComparisonCount(): number {
   if (!hasComparisonsTable()) return 0;
   return (getDb().prepare('SELECT COUNT(*) as c FROM comparisons').get() as { c: number }).c;
+}
+
+let _staticComparisons: ComparisonPair[] | null = null;
+let _staticComparisonPairSet: Set<string> | null = null;
+
+function normalizeComparisonPair(slugA: string, slugB: string): string {
+  return slugA < slugB ? `${slugA}|${slugB}` : `${slugB}|${slugA}`;
+}
+
+function toStaticComparisonPair(pair: ComparisonPair): ComparisonPair {
+  if (pair.slugA < pair.slugB) return pair;
+  return {
+    slugA: pair.slugB,
+    slugB: pair.slugA,
+    nameA: pair.nameB,
+    nameB: pair.nameA,
+  };
+}
+
+export function getStaticComparisons(limit = COMPARISON_PRERENDER_LIMIT): ComparisonPair[] {
+  if (!_staticComparisons) {
+    _staticComparisons = getTopComparisons(COMPARISON_PRERENDER_LIMIT).map(toStaticComparisonPair);
+  }
+  return _staticComparisons.slice(0, limit);
+}
+
+export function isStaticComparisonPair(slugA: string, slugB: string): boolean {
+  if (!_staticComparisonPairSet) {
+    _staticComparisonPairSet = new Set(
+      getStaticComparisons().map((pair) => normalizeComparisonPair(pair.slugA, pair.slugB))
+    );
+  }
+  return _staticComparisonPairSet.has(normalizeComparisonPair(slugA, slugB));
+}
+
+export function getStaticComparisonHref(slugA: string, slugB: string): string | null {
+  if (!isStaticComparisonPair(slugA, slugB)) return null;
+  const [a, b] = slugA < slugB ? [slugA, slugB] : [slugB, slugA];
+  return `/compare/${a}-vs-${b}/`;
+}
+
+export function getStaticComparisonsForSlug(slug: string, limit = 12): ComparisonPair[] {
+  return getStaticComparisons().filter((pair) => pair.slugA === slug || pair.slugB === slug).slice(0, limit);
 }
 
 // --- Middle names ---
@@ -168,6 +231,10 @@ export function getTopNamesForMiddleNames(limit = 3000): { slug: string }[] {
 
 export function countNames(): number {
   return (getDb().prepare('SELECT COUNT(*) as c FROM names').get() as { c: number }).c;
+}
+
+export function getNameSlugsPage(offset: number, limit: number): { slug: string }[] {
+  return getDb().prepare('SELECT slug FROM names ORDER BY peak_pct DESC, name ASC LIMIT ? OFFSET ?').all(limit, offset) as { slug: string }[];
 }
 
 export function getPopularBoyNames(limit = 10): BabyName[] {
@@ -222,6 +289,17 @@ export function getNameRank(slug: string): number | null {
   return row?.rank ?? null;
 }
 
+// Peer names by peak_pct (one higher, one lower), same gender. Used for metadata peer comparisons.
+export function getNamePeers(peakPct: number, gender: string, excludeSlug: string): { above?: BabyName; below?: BabyName } {
+  const above = getDb().prepare(
+    'SELECT * FROM names WHERE peak_pct > ? AND gender = ? AND slug != ? ORDER BY peak_pct ASC LIMIT 1'
+  ).get(peakPct, gender, excludeSlug) as BabyName | undefined;
+  const below = getDb().prepare(
+    'SELECT * FROM names WHERE peak_pct < ? AND gender = ? AND slug != ? ORDER BY peak_pct DESC LIMIT 1'
+  ).get(peakPct, gender, excludeSlug) as BabyName | undefined;
+  return { above, below };
+}
+
 export function getLatestPopularity(slug: string): PopularityRow | null {
   return (getDb().prepare(
     'SELECT * FROM popularity WHERE slug = ? ORDER BY year DESC LIMIT 1'
@@ -236,14 +314,50 @@ export function searchNames(query: string, limit = 30): BabyName[] {
   `).all(q + '%', q + '%', limit) as BabyName[];
 }
 
-export function getRotatingComparisons(limit = 2000): { slugA: string; slugB: string; nameA: string; nameB: string }[] {
+// --- Decade top-names (national SSA aggregate) ---
+
+export interface DecadeTopRow {
+  slug: string;
+  name: string;
+  gender: string;
+  origin: string | null;
+  total_pct: number;
+  peak_year: number | null;
+}
+
+/**
+ * Top N names by summed yearly percentage over a given decade (national).
+ * Decade is inclusive-start, exclusive-end: e.g. (1950, 1960) covers 1950–1959.
+ * SSA state-level data is only available for 1910+ for many states, so we use
+ * national aggregate here; state-specific culture is layered on in the UI.
+ */
+export function getTopNamesForDecade(
+  startYear: number,
+  gender: "boy" | "girl",
+  limit = 10
+): DecadeTopRow[] {
+  return getDb()
+    .prepare(
+      `SELECT n.slug, n.name, n.gender, n.origin, n.peak_year,
+              SUM(p.pct) AS total_pct
+       FROM popularity p
+       JOIN names n ON p.slug = n.slug
+       WHERE p.year >= ? AND p.year < ? AND n.gender = ?
+       GROUP BY n.slug
+       ORDER BY total_pct DESC
+       LIMIT ?`
+    )
+    .all(startYear, startYear + 10, gender, limit) as DecadeTopRow[];
+}
+
+export function getRotatingComparisons(limit = 2000): ComparisonPair[] {
   const week = getCurrentWeek();
   const offset = ((week - 1) % 50) * 200;
   const top = getDb().prepare(
     'SELECT slug, name FROM names ORDER BY peak_pct DESC LIMIT 200 OFFSET ?'
   ).all(offset) as { slug: string; name: string }[];
 
-  const pairs: { slugA: string; slugB: string; nameA: string; nameB: string }[] = [];
+  const pairs: ComparisonPair[] = [];
   for (let i = 0; i < top.length && pairs.length < limit; i++) {
     for (let j = i + 1; j < top.length && pairs.length < limit; j++) {
       if (top[i].slug < top[j].slug) {

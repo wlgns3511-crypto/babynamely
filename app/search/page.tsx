@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import { searchNames, getPopularBoyNames, getPopularGirlNames } from "@/lib/db";
 
-export const metadata: Metadata = {
-  title: "Search Baby Names — Meanings, Origins & Popularity",
-  description: "Search thousands of baby names. Find meanings, origins, and historical popularity trends for any name.",
-  alternates: { canonical: "/search" },
-  openGraph: { url: "/search/" },
-};
-
 interface Props {
   searchParams: Promise<{ q?: string }>;
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  await searchParams;
+  return {
+    title: "Search Baby Names — Meanings, Origins & Popularity",
+    description: "Search thousands of baby names. Find meanings, origins, and historical popularity trends for any name.",
+    alternates: { canonical: "/search/" },
+    openGraph: { url: "/search/" },
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function SearchPage({ searchParams }: Props) {
@@ -24,7 +28,7 @@ export default async function SearchPage({ searchParams }: Props) {
       <h1 className="text-3xl font-bold mb-2">Search Baby Names</h1>
       <p className="text-slate-500 mb-6">Find meanings, origins, and popularity trends for any name</p>
 
-      <form method="get" action="/search" className="mb-8">
+      <form method="get" action="/search/" className="mb-8">
         <div className="flex gap-2">
           <input
             type="search"
@@ -55,7 +59,7 @@ export default async function SearchPage({ searchParams }: Props) {
               {results.map((n) => (
                 <a
                   key={n.slug}
-                  href={`/name/${n.slug}`}
+                  href={`/name/${n.slug}/`}
                   className="block p-4 border border-slate-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-all"
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -90,7 +94,7 @@ export default async function SearchPage({ searchParams }: Props) {
             <h2 className="text-lg font-semibold mb-3 text-slate-700">Popular Boy Names</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {popularBoy.map((n) => (
-                <a key={n.slug} href={`/name/${n.slug}`} className="p-3 border border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all flex items-center gap-2">
+                <a key={n.slug} href={`/name/${n.slug}/`} className="p-3 border border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all flex items-center gap-2">
                   <span className="font-medium text-slate-900">{n.name}</span>
                   {n.meaning && <span className="text-xs text-slate-400 truncate">{n.meaning}</span>}
                 </a>
@@ -101,7 +105,7 @@ export default async function SearchPage({ searchParams }: Props) {
             <h2 className="text-lg font-semibold mb-3 text-slate-700">Popular Girl Names</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {popularGirl.map((n) => (
-                <a key={n.slug} href={`/name/${n.slug}`} className="p-3 border border-slate-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-all flex items-center gap-2">
+                <a key={n.slug} href={`/name/${n.slug}/`} className="p-3 border border-slate-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-all flex items-center gap-2">
                   <span className="font-medium text-slate-900">{n.name}</span>
                   {n.meaning && <span className="text-xs text-slate-400 truncate">{n.meaning}</span>}
                 </a>

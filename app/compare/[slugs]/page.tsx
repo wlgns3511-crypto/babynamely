@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getPopularity, getTopComparisons, getSimilarNames, getNamesBySameOrigin, getRandomNames } from "@/lib/db";
+import { getNameBySlug, getPopularity, getStaticComparisons, getStaticComparisonsForSlug, getStaticComparisonHref, getSimilarNames, getNamesBySameOrigin, isStaticComparisonPair } from "@/lib/db";
 import { formatPct, genderBg } from "@/lib/format";
 import { AdSlot } from "@/components/AdSlot";
 import { ComparisonBar } from "@/components/ComparisonBar";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
 export const dynamicParams = false;
-export const revalidate = false; // 24시간 ISR 캐시
+export const revalidate = 86400; // 24시간 ISR 캐시
 
 interface Props { params: Promise<{ slugs: string }> }
 
@@ -16,24 +16,35 @@ function parseSlugs(s: string): [string, string] | null {
   return m ? [m[1], m[2]] : null;
 }
 
+function toCanonicalComparisonSlug(slugs: string): string | null {
+  const parsed = parseSlugs(slugs);
+  if (!parsed) return null;
+  return [parsed[0], parsed[1]].sort().join("-vs-");
+}
+
 export async function generateStaticParams() {
-  return getTopComparisons(1000).map((p) => {
-    const [a, b] = [p.slugA, p.slugB].sort();
-    return { slugs: `${a}-vs-${b}` };
-  });
+  const params: { slugs: string }[] = [];
+  for (const pair of getStaticComparisons()) {
+    const canonicalSlugs = `${pair.slugA}-vs-${pair.slugB}`;
+    params.push({ slugs: canonicalSlugs });
+    const reverseSlugs = `${pair.slugB}-vs-${pair.slugA}`;
+    if (reverseSlugs !== canonicalSlugs) params.push({ slugs: reverseSlugs });
+  }
+  return params;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slugs } = await params;
+  const canonicalSlugs = toCanonicalComparisonSlug(slugs);
   const parsed = parseSlugs(slugs);
-  if (!parsed) return {};
+  if (!parsed || !canonicalSlugs || !isStaticComparisonPair(parsed[0], parsed[1])) return {};
   const a = getNameBySlug(parsed[0]), b = getNameBySlug(parsed[1]);
   if (!a || !b) return {};
   return {
     title: `${a.name} vs ${b.name} - Baby Name Comparison | Which Is Better?`,
     description: `Compare baby names ${a.name} and ${b.name} side by side. Meanings, origins, popularity trends, and which name parents prefer in 2025.`,
-    alternates: { canonical: `/compare/${slugs}` },
-    openGraph: { url: `/compare/${slugs}` },
+    alternates: { canonical: `/compare/${canonicalSlugs}/` },
+    openGraph: { url: `/compare/${canonicalSlugs}/` },
   };
 }
 
@@ -41,6 +52,7 @@ export default async function ComparePage({ params }: Props) {
   const { slugs } = await params;
   const parsed = parseSlugs(slugs);
   if (!parsed) notFound();
+  if (!isStaticComparisonPair(parsed[0], parsed[1])) notFound();
   const [slugA, slugB] = parsed;
   const a = getNameBySlug(slugA), b = getNameBySlug(slugB);
   if (!a || !b) notFound();
@@ -61,8 +73,8 @@ export default async function ComparePage({ params }: Props) {
 
   const breadcrumbs = [
     { name: "Home", url: "/" },
-    { name: "Compare", url: "/compare" },
-    { name: `${a.name} vs ${b.name}`, url: `/compare/${slugs}` },
+    { name: "Compare", url: "/compare/" },
+    { name: `${a.name} vs ${b.name}`, url: `/compare/${slugs}/` },
   ];
 
   return (
@@ -79,7 +91,7 @@ export default async function ComparePage({ params }: Props) {
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {[a, b].map((n) => (
           <div key={n.slug} className={`rounded-lg p-6 ${genderBg(n.gender)}`}>
-            <a href={`/name/${n.slug}`} className="text-2xl font-bold hover:underline">{n.name}</a>
+            <a href={`/name/${n.slug}/`} className="text-2xl font-bold hover:underline">{n.name}</a>
             <div className="mt-2 space-y-1 text-sm">
               <div><span className="text-slate-500">Gender:</span> {n.gender}</div>
               {n.origin && <div><span className="text-slate-500">Origin:</span> {n.origin}</div>}
@@ -156,12 +168,9 @@ export default async function ComparePage({ params }: Props) {
                 <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">Similar to {a.name}</h3>
                 <div className="flex flex-wrap gap-2">
                   {similarA.map(n => {
-                    const [x, y] = [a.slug, n.slug].sort();
-                    return (
-                      <a key={n.slug} href={`/compare/${x}-vs-${y}`} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm hover:bg-purple-100">
-                        {a.name} vs {n.name}
-                      </a>
-                    );
+                    const href = getStaticComparisonHref(a.slug, n.slug);
+                    if (!href) return null;
+                    return <a key={n.slug} href={href} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm hover:bg-purple-100">{a.name} vs {n.name}</a>;
                   })}
                 </div>
               </div>
@@ -171,12 +180,9 @@ export default async function ComparePage({ params }: Props) {
                 <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">Similar to {b.name}</h3>
                 <div className="flex flex-wrap gap-2">
                   {similarB.map(n => {
-                    const [x, y] = [b.slug, n.slug].sort();
-                    return (
-                      <a key={n.slug} href={`/compare/${x}-vs-${y}`} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100">
-                        {b.name} vs {n.name}
-                      </a>
-                    );
+                    const href = getStaticComparisonHref(b.slug, n.slug);
+                    if (!href) return null;
+                    return <a key={n.slug} href={href} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100">{b.name} vs {n.name}</a>;
                   })}
                 </div>
               </div>
@@ -195,13 +201,9 @@ export default async function ComparePage({ params }: Props) {
             <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">More {a.origin} name comparisons</h3>
             <div className="flex flex-wrap gap-2">
               {originNames.map(n => {
-                const [x, y] = [a.slug, n.slug].sort();
-                return (
-                  <a key={n.slug} href={`/compare/${x}-vs-${y}`}
-                    className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-purple-50">
-                    {a.name} vs {n.name}
-                  </a>
-                );
+                const href = getStaticComparisonHref(a.slug, n.slug);
+                if (!href) return null;
+                return <a key={n.slug} href={href} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-purple-50">{a.name} vs {n.name}</a>;
               })}
             </div>
           </section>
@@ -220,25 +222,23 @@ export default async function ComparePage({ params }: Props) {
 
       {/* Explore More Comparisons */}
       {(() => {
-        const randomPool = getRandomNames(30);
-        const pairs: { nameA: string; nameB: string; slug: string }[] = [];
-        for (let i = 0; i < randomPool.length - 1 && pairs.length < 15; i++) {
-          const r1 = randomPool[i];
-          const r2 = randomPool[i + 1];
-          if (r1.slug === r2.slug) continue;
-          const [x, y] = [r1.slug, r2.slug].sort();
-          const pairSlug = `${x}-vs-${y}`;
-          if (pairSlug === slugs) continue;
-          const [nameX, nameY] = r1.slug === x ? [r1.name, r2.name] : [r2.name, r1.name];
-          pairs.push({ nameA: nameX, nameB: nameY, slug: pairSlug });
-        }
+        const pairSet = new Set<string>();
+        const pairs = [...getStaticComparisonsForSlug(a.slug, 10), ...getStaticComparisonsForSlug(b.slug, 10)]
+          .filter((pair) => `${pair.slugA}-vs-${pair.slugB}` !== slugs)
+          .filter((pair) => {
+            const key = `${pair.slugA}|${pair.slugB}`;
+            if (pairSet.has(key)) return false;
+            pairSet.add(key);
+            return true;
+          })
+          .slice(0, 15);
         if (pairs.length === 0) return null;
         return (
           <section className="mt-8 mb-8">
             <h2 className="text-xl font-bold mb-4">Explore More Comparisons</h2>
             <div className="flex flex-wrap gap-2">
               {pairs.map((p) => (
-                <a key={p.slug} href={`/compare/${p.slug}`}
+                <a key={`${p.slugA}-${p.slugB}`} href={`/compare/${p.slugA}-vs-${p.slugB}/`}
                   className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-purple-700 rounded-full">
                   {p.nameA} vs {p.nameB}
                 </a>
@@ -250,11 +250,11 @@ export default async function ComparePage({ params }: Props) {
 
       <footer className="mt-12 pt-8 border-t border-slate-200 text-xs text-slate-400 space-y-2">
         <p>Popular baby name comparisons: {a.name} vs {b.name}, best baby names 2025, unique baby names, {a.name} name meaning, {b.name} name meaning, baby name popularity trends, {a.origin || 'classic'} baby names, {b.origin || 'classic'} baby names</p>
-        <p>Compare more names: <a href="/compare" className="underline hover:text-slate-600">Baby Name Comparison Tool</a> | <a href="/names/gender/boy" className="underline hover:text-slate-600">Popular Boy Names</a> | <a href="/names/gender/girl" className="underline hover:text-slate-600">Popular Girl Names</a></p>
+        <p>Compare more names: <a href="/compare/" className="underline hover:text-slate-600">Baby Name Comparison Tool</a> | <a href="/names/gender/boy/" className="underline hover:text-slate-600">Popular Boy Names</a> | <a href="/names/gender/girl/" className="underline hover:text-slate-600">Popular Girl Names</a></p>
       </footer>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />
+      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />}
     </div>
   );
 }

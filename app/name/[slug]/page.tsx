@@ -1,22 +1,51 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getRandomNames, getNameStats, getNameRank, getLatestPopularity } from "@/lib/db";
+import Database from "better-sqlite3";
+import path from "path";
+import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getStaticComparisonHref, getStaticComparisonsForSlug, getNameStats, getNameRank, getLatestPopularity, getNamePeers } from "@/lib/db";
 import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
+import { generateAutoFAQs } from "@/lib/auto-faqs";
 import { AdSlot } from "@/components/AdSlot";
 import { DataFeedback } from "@/components/DataFeedback";
 import { EmbedButton } from "@/components/EmbedButton";
 import { FreshnessTag } from "@/components/FreshnessTag";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
+import { PopularityTimeline } from "@/components/tools/PopularityTimeline";
 import { AuthorBox } from "@/components/AuthorBox";
 import { EditorNote } from "@/components/EditorNote";
 import { DidYouKnow } from "@/components/DidYouKnow";
 import { DataSourceBadge } from "@/components/DataSourceBadge";
 import { CrossSiteLinks } from "@/components/CrossSiteLinks";
+import { FeedbackButton } from "@/components/FeedbackButton";
 import { InsightCards } from "@/components/InsightCards";
+import { AnswerHero } from "@/components/upgrades/AnswerHero";
+import { TrustBlock } from "@/components/upgrades/TrustBlock";
+import { DecisionNext } from "@/components/upgrades/DecisionNext";
+import { RelatedEntities } from '@/components/upgrades/RelatedEntities';
+import { TableOfContents } from '@/components/upgrades/TableOfContents';
 
 interface Props { params: Promise<{ slug: string }> }
+
+// Cache top-100 by-decade name slugs once per build (Tier S HCU expansion 2026-04-21).
+let _top100ByDecadeSlugs: Set<string> | null = null;
+function isTop100ByDecade(slug: string): boolean {
+  if (!_top100ByDecadeSlugs) {
+    const db = new Database(path.join(process.cwd(), "data", "names.db"), {
+      readonly: true,
+      fileMustExist: true,
+    });
+    const rows = db
+      .prepare(
+        "SELECT slug FROM names WHERE peak_pct IS NOT NULL ORDER BY peak_pct DESC LIMIT 100"
+      )
+      .all() as { slug: string }[];
+    db.close();
+    _top100ByDecadeSlugs = new Set(rows.map((r) => r.slug));
+  }
+  return _top100ByDecadeSlugs.has(slug);
+}
 
 const trendIcons: Record<string, string> = {
   rising: "📈", falling: "📉", stable: "➡️", classic: "👑", vintage_revival: "🔄", new: "✨",
@@ -25,19 +54,49 @@ const trendLabels: Record<string, string> = {
   rising: "Trending Up", falling: "Less Common Now", stable: "Steady", classic: "Timeless Classic", vintage_revival: "Vintage Revival", new: "Rare & Unique",
 };
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
-  return getAllNames().slice(0, 3000).map((n) => ({ slug: n.slug }));
+  return getAllNames().map((n) => ({ slug: n.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const n = getNameBySlug(slug);
   if (!n) return {};
+  // RANKING pattern: lead with popularity rank (by peak_pct) vs total names.
+  const stats = getNameStats();
+  const rank = getNameRank(slug);
+  const total = stats.totalNames;
+  const genderLabel = n.gender === 'boy' ? 'boy names' : n.gender === 'girl' ? 'girl names' : 'names';
+  let title: string;
+  let description: string;
+  if (rank && n.peak_pct) {
+    const peers = getNamePeers(n.peak_pct, n.gender, slug);
+    const peerBits: string[] = [];
+    if (peers.above) {
+      const r = getNameRank(peers.above.slug);
+      if (r) peerBits.push(`${peers.above.name} (#${r})`);
+    }
+    if (peers.below) {
+      const r = getNameRank(peers.below.slug);
+      if (r) peerBits.push(`${peers.below.name} (#${r})`);
+    }
+    const peerStr = peerBits.length ? ` Compare with ${peerBits.join(' and ')}.` : '';
+    const originBit = n.origin ? `${n.origin} origin` : '';
+    const meaningBit = n.meaning ? `means "${n.meaning.slice(0, 40)}"` : '';
+    const fact = [originBit, meaningBit].filter(Boolean).join(', ');
+    title = `${n.name}: #${rank} of ${total} ${n.gender === 'boy' ? 'Boy' : n.gender === 'girl' ? 'Girl' : ''} Names · Peak ${n.peak_year ?? ''}`.trim();
+    description = `${n.name} ranks #${rank} of ${total} ${genderLabel} by peak popularity (${(n.peak_pct * 100).toFixed(2)}% in ${n.peak_year ?? 'peak year'}). ${fact}.${peerStr} SSA data through 2023.`;
+  } else {
+    title = `${n.name}: Meaning, Origin & Popularity`;
+    description = `${n.name} is a ${n.gender} name${n.origin ? ` of ${n.origin} origin` : ''}${n.meaning ? ` meaning "${n.meaning}"` : ''}. Popularity trends since 1880, cultural context, similar names. SSA data through 2023.`;
+  }
   return {
-    title: `${n.name} — Meaning, Origin, Popularity & Trends`,
-    description: `${n.name} is a ${n.gender} name${n.origin ? ` of ${n.origin} origin` : ''}${n.meaning ? ` meaning "${n.meaning}"` : ''}. See popularity trends since 1880, cultural context, naming tips, and similar names.`,
-    alternates: { canonical: `/name/${slug}` },
-    openGraph: { url: `/name/${slug}` },
+    title,
+    description,
+    alternates: { canonical: `/name/${slug}/` },
+    openGraph: { url: `/name/${slug}/` },
   };
 }
 
@@ -50,19 +109,24 @@ export default async function NamePage({ params }: Props) {
   const similar = getSimilarNames(slug, n.gender, 12);
   const analysis = analyzeName(n.name, n.gender, n.origin, n.meaning, n.peak_year, n.peak_pct, popularity);
 
+  const nameStats = getNameStats();
+  const nameRank = getNameRank(slug);
+  const latestPop = getLatestPopularity(slug);
+  const autoFaqs = generateAutoFAQs(n, nameStats, nameRank, latestPop, similar);
   const faqs: { question: string; answer: string }[] = [
-    ...(n.meaning ? [{ question: `What does ${n.name} mean?`, answer: `${n.name} means "${n.meaning}"${n.origin ? ` and comes from ${n.origin} origin` : ''}. ${analysis.culturalContext.split('.').slice(0, 2).join('.')}.` }] : []),
+    ...(n.meaning ? [{ question: `What does ${n.name} mean?`, answer: `${n.name} means "${n.meaning}"${n.origin ? ` and comes from ${n.origin} origin` : ''}. ${analysis.culturalContext.split('.').join('.')}.` }] : []),
     ...(n.peak_year ? [{ question: `When was ${n.name} most popular?`, answer: `${n.name} was most popular in ${n.peak_year} when ${formatPct(n.peak_pct!)} of babies were given this name. ${analysis.trendDescription}` }] : []),
     { question: `Is ${n.name} a boy or girl name?`, answer: `${n.name} is primarily used as a ${n.gender} name. ${analysis.namingTips[0]}` },
     { question: `Is ${n.name} a popular name right now?`, answer: analysis.trendDescription },
     ...(n.origin ? [{ question: `What is the cultural significance of ${n.name}?`, answer: analysis.culturalContext.substring(0, 300) }] : []),
     { question: `What middle names go well with ${n.name}?`, answer: `${analysis.namingTips.find(t => t.includes("syllable")) || ""} Check our middle names page for specific suggestions that complement ${n.name}.` },
+    ...autoFaqs,
   ];
 
   const breadcrumbs = [
     { name: "Home", url: "/" },
-    { name: n.gender === "boy" ? "Boy Names" : "Girl Names", url: `/names/gender/${n.gender}` },
-    { name: n.name, url: `/name/${slug}` },
+    { name: n.gender === "boy" ? "Boy Names" : "Girl Names", url: `/names/gender/${n.gender}/` },
+    { name: n.name, url: `/name/${slug}/` },
   ];
 
   const decades = popularity.filter(p => p.year % 10 === 0);
@@ -71,26 +135,52 @@ export default async function NamePage({ params }: Props) {
     <div>
       <nav className="text-sm text-slate-500 mb-4">
         {breadcrumbs.map((b, i) => (
-          <span key={i}>{i > 0 && " / "}{b.url !== `/name/${slug}` ? <a href={b.url} className="hover:underline">{b.name}</a> : <span className="text-slate-800">{b.name}</span>}</span>
+          <span key={i}>{i > 0 && " / "}{b.url !== `/name/${slug}/` ? <a href={b.url} className="hover:underline">{b.name}</a> : <span className="text-slate-800">{b.name}</span>}</span>
         ))}
       </nav>
 
-      <div className="flex items-center gap-3 mb-2">
-        <h1 className="text-4xl font-bold">{n.name}</h1>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${n.gender === 'boy' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
-          {n.gender === 'boy' ? 'Boy' : 'Girl'}
-        </span>
-        {n.origin && <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm">{n.origin}</span>}
-      </div>
+      <AnswerHero
+        title={n.name}
+        subtitle={n.gender === 'boy' ? 'Boy name' : 'Girl name'}
+        tagline={`${n.meaning ? `Means "${n.meaning}". ` : ''}${n.origin ? `${n.origin} origin. ` : ''}${n.peak_year ? `Peaked in ${n.peak_year}${n.peak_pct ? ` at ${formatPct(n.peak_pct)} of US babies` : ''}. ` : ''}${trendLabels[analysis.trendStatus]}.`}
+        badges={[
+          { label: n.gender === 'boy' ? 'Boy' : 'Girl', tone: n.gender === 'boy' ? 'indigo' : 'amber' },
+          ...(n.origin ? [{ label: n.origin, tone: 'slate' as const }] : []),
+          { label: `${analysis.syllableCount} syllable${analysis.syllableCount > 1 ? 's' : ''}`, tone: 'slate' as const },
+        ]}
+        alternatives={similar.slice(0, 3).map((s) => ({
+          label: s.name,
+          href: `/name/${s.slug}/`,
+          sublabel: s.meaning || undefined,
+        }))}
+        alternativesLabel="Similar names"
+      />
 
-      {/* Trend badge */}
-      <div className="flex items-center gap-2 mb-6">
-        <span className="text-lg">{trendIcons[analysis.trendStatus]}</span>
-        <span className="text-sm text-slate-600">{trendLabels[analysis.trendStatus]}</span>
-        <span className="text-xs text-slate-400">• {analysis.syllableCount} syllable{analysis.syllableCount > 1 ? "s" : ""} • {n.name.length} letters</span>
-      </div>
+      <TrustBlock
+        sources={[
+          {
+            name: "SSA Baby Names",
+            url: "https://www.ssa.gov/oact/babynames/",
+          },
+          {
+            name: "US Census",
+            url: "https://www.census.gov/topics/population/genealogy.html",
+          },
+          {
+            name: "Behind the Name",
+            url: `https://www.behindthename.com/name/${encodeURIComponent(n.name.toLowerCase())}/`,
+          },
+          {
+            name: "Wikipedia",
+            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(n.name)}_(given_name)`,
+          },
+        ]}
+        updated="SSA data through 2023"
+      />
 
       <EditorNote note={`${n.name} is ${n.origin ? `a name of ${n.origin} origin` : 'a name'}${n.peak_year ? ` that peaked in popularity around ${n.peak_year}` : ''}. ${n.meaning ? `Its meaning, "${n.meaning}", reflects its cultural roots.` : 'Explore its trends and cultural background below.'}`} />
+
+      <TableOfContents />
 
       {/* Info card */}
       <div className={`rounded-lg p-6 mb-6 ${genderBg(n.gender)}`}>
@@ -210,6 +300,37 @@ export default async function NamePage({ params }: Props) {
         )}
       </section>
 
+      {/* Interactive Popularity Timeline */}
+      <PopularityTimeline
+        name={n.name}
+        gender={n.gender}
+        peakYear={n.peak_year}
+        peakPct={n.peak_pct}
+        trend={analysis.trendStatus}
+        popularity={popularity}
+      />
+
+      {/* Decade Deep Dive cross-link (top 100 names only, Tier S HCU expansion 2026-04-21) */}
+      {isTop100ByDecade(slug) && (
+        <section className="my-6">
+          <a
+            href={`/name/${slug}/by-decade/`}
+            className={`block p-5 rounded-xl border hover:shadow-sm transition ${n.gender === "boy" ? "bg-gradient-to-r from-blue-50 to-sky-50 border-blue-200 hover:border-blue-400" : "bg-gradient-to-r from-pink-50 to-rose-50 border-pink-200 hover:border-pink-400"}`}
+          >
+            <div className={`text-xs uppercase tracking-wider font-semibold mb-1 ${n.gender === "boy" ? "text-blue-700" : "text-pink-700"}`}>
+              Deep Dive · Popularity by Decade
+            </div>
+            <div className="text-base font-bold text-slate-900 mb-1">
+              {n.name} full 13-decade popularity arc →
+            </div>
+            <div className="text-sm text-slate-700">
+              1880s through 2000s decade-by-decade share, peak decade era context,
+              and same-decade peer names.
+            </div>
+          </a>
+        </section>
+      )}
+
       {/* Cultural Context */}
       {analysis.culturalContext && (
         <section className="mb-8">
@@ -219,6 +340,65 @@ export default async function NamePage({ params }: Props) {
           </div>
         </section>
       )}
+
+      {/* Why this name matters — US parents context */}
+      <section className="mb-8" data-upgrade="why-it-matters">
+        <h2 className="text-xl font-bold mb-3">
+          Why &ldquo;{n.name}&rdquo; matters to US parents
+        </h2>
+        <div className="rounded-lg border border-slate-200 bg-white p-5 text-slate-700 leading-relaxed space-y-3">
+          {(() => {
+            const rank = getNameRank(slug);
+            const stats = getNameStats();
+            const latest = getLatestPopularity(slug);
+            const currentYear = new Date().getFullYear();
+            const peakYearsAgo = n.peak_year ? currentYear - n.peak_year : null;
+
+            // Trend-based primary framing
+            const trending = analysis.trendStatus === "rising";
+            const classic = analysis.trendStatus === "classic";
+            const vintage = analysis.trendStatus === "vintage_revival";
+            const rareNew = analysis.trendStatus === "new";
+            const falling = analysis.trendStatus === "falling";
+
+            const primary = trending
+              ? `${n.name} is on the rise with American parents right now. Names climbing the SSA charts tend to signal a name that feels fresh without being risky \u2014 your child won't be the only ${n.name} in preschool, but they also won't share it with four classmates.`
+              : classic
+              ? `${n.name} is a timeless American classic. Generations of US parents have chosen this name since the SSA started tracking in 1880, which means it reads as familiar and unflinching in every setting \u2014 from kindergarten roll call to a resume at 40.`
+              : vintage
+              ? `${n.name} is in the middle of a vintage revival. Names like this were common among grandparents and great-grandparents and are now cycling back with US millennial and Gen Z parents who want something that feels grounded and a little unexpected.`
+              : rareNew
+              ? `${n.name} is a rare choice in the US. If you value distinctiveness, this name is comfortably outside the top-1000 crowd \u2014 your child will likely be the only one in their grade. The trade-off is that strangers may ask how to spell or pronounce it more often.`
+              : falling
+              ? `${n.name} was once common in the United States and is now on the decline. For parents, this often makes the name feel mature or generation-specific \u2014 a double-edged sword. It carries real history, but it may read as belonging to an older cohort.`
+              : `${n.name} has had a steady presence in the US naming landscape, neither spiking nor disappearing from the SSA record.`;
+
+            const rankNote = rank != null && stats.totalNames > 0
+              ? `Ranked #${rank.toLocaleString()} out of ${stats.totalNames.toLocaleString()} names we track, ${n.name} sits in the top ${Math.max(1, Math.round((rank / stats.totalNames) * 100))}% by peak US popularity.`
+              : null;
+
+            const peakNote = n.peak_year && peakYearsAgo != null
+              ? `The SSA peak was ${n.peak_year} (${peakYearsAgo} years ago). For context, a name that peaked more than 60 years ago is likely associated with grandparents; a name peaking in the last 20 years is likely associated with classmates.`
+              : null;
+
+            const meaningNote = n.meaning && n.origin
+              ? `The ${n.origin} root meaning ("${n.meaning}") is the kind of detail US parents frequently share in birth announcements and framed nursery art \u2014 it gives the name story beyond its sound.`
+              : null;
+
+            const siblingNote = `When choosing a sibling set, US parents often aim for names that match in formality level and era but avoid identical starting letters or sounds. For ${n.name}, this typically means pairing with a ${analysis.trendStatus === "classic" ? "classic" : analysis.trendStatus === "vintage_revival" ? "vintage" : "modern"} name of similar length.`;
+
+            return (
+              <>
+                <p>{primary}</p>
+                {rankNote && <p>{rankNote}</p>}
+                {peakNote && <p>{peakNote}</p>}
+                {meaningNote && <p>{meaningNote}</p>}
+                <p className="text-sm text-slate-500">{siblingNote}</p>
+              </>
+            );
+          })()}
+        </div>
+      </section>
 
       {/* Naming Tips */}
       <section className="mb-8">
@@ -231,7 +411,7 @@ export default async function NamePage({ params }: Props) {
             </div>
           ))}
         </div>
-        <a href={`/middle-names/${slug}`} className="inline-block mt-3 px-4 py-2 rounded-lg border border-purple-200 text-purple-600 hover:bg-purple-50 text-sm">
+        <a href={`/middle-names/${slug}/`} className="inline-block mt-3 px-4 py-2 rounded-lg border border-purple-200 text-purple-600 hover:bg-purple-50 text-sm">
           Find middle names for {n.name} →
         </a>
       </section>
@@ -255,9 +435,13 @@ export default async function NamePage({ params }: Props) {
               const [x, y] = [slug, s.slug].sort();
               return (
                 <div key={s.slug} className="p-3 rounded-lg border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-center">
-                  <a href={`/name/${s.slug}`} className="font-medium hover:underline">{s.name}</a>
+                  <a href={`/name/${s.slug}/`} className="font-medium hover:underline">{s.name}</a>
                   {s.meaning && <div className="text-xs text-slate-400 mt-1">{s.meaning}</div>}
-                  <a href={`/compare/${x}-vs-${y}`} className="text-xs text-purple-500 hover:underline mt-1 block">Compare →</a>
+                  {(() => {
+                    const href = getStaticComparisonHref(slug, s.slug);
+                    if (!href) return null;
+                    return <a href={href} className="text-xs text-purple-500 hover:underline mt-1 block">Compare →</a>;
+                  })()}
                 </div>
               );
             })}
@@ -279,13 +463,9 @@ export default async function NamePage({ params }: Props) {
                 </h3>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {sameOrigin.map((s) => {
-                    const [x, y] = [slug, s.slug].sort();
-                    return (
-                      <a key={s.slug} href={`/compare/${x}-vs-${y}`}
-                        className="text-sm px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full">
-                        vs {s.name}
-                      </a>
-                    );
+                    const href = getStaticComparisonHref(slug, s.slug);
+                    if (!href) return null;
+                    return <a key={s.slug} href={href} className="text-sm px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full">vs {s.name}</a>;
                   })}
                 </div>
               </>
@@ -295,18 +475,59 @@ export default async function NamePage({ params }: Props) {
             </h3>
             <div className="flex flex-wrap gap-2">
               {popular.map((s) => {
-                const [x, y] = [slug, s.slug].sort();
-                return (
-                  <a key={s.slug} href={`/compare/${x}-vs-${y}`}
-                    className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-purple-700 rounded-full">
-                    vs {s.name}
-                  </a>
-                );
+                const href = getStaticComparisonHref(slug, s.slug);
+                if (!href) return null;
+                return <a key={s.slug} href={href} className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-purple-700 rounded-full">vs {s.name}</a>;
               })}
             </div>
           </section>
         );
       })()}
+
+      {/* DecisionNext — 3 opinionated next steps */}
+      <DecisionNext
+        cards={[
+          {
+            title: `Middle names for ${n.name}`,
+            blurb: `See curated middle-name pairings that match ${n.name}'s rhythm and style.`,
+            href: `/middle-names/${slug}/`,
+            cta: `Find middle names`,
+            tone: n.gender === 'boy' ? 'indigo' as const : 'amber' as const,
+          },
+          ...((() => {
+            const compareHref = similar.length > 0 ? getStaticComparisonHref(slug, similar[0].slug) : null;
+            return compareHref
+              ? [
+                  {
+                    title: `${n.name} vs ${similar[0].name}`,
+                    blurb: `Compare popularity, origin, and trend side-by-side with the closest alternative.`,
+                    href: compareHref,
+                    cta: `Open comparison`,
+                    tone: 'emerald' as const,
+                  },
+                ]
+              : [];
+          })()),
+          {
+            title: `More ${n.gender === 'boy' ? 'boy' : 'girl'} names`,
+            blurb: `Browse other ${n.gender === 'boy' ? 'boy' : 'girl'} names in the same trend bracket and pick a shortlist.`,
+            href: `/names/gender/${n.gender}/`,
+            cta: `Browse ${n.gender === 'boy' ? 'boy' : 'girl'} names`,
+            tone: 'indigo' as const,
+          },
+        ].slice(0, 3)}
+      />
+
+      <RelatedEntities
+        entityName={n.name}
+        heading={`Names similar to ${n.name}`}
+        statLabel="Peak year"
+        items={similar.slice(0, 8).map(s => ({
+          name: s.name,
+          href: `/name/${s.slug}/`,
+          stat: s.peak_year ? `Peak ${s.peak_year}` : undefined,
+        }))}
+      />
 
       {/* FAQ */}
       {faqs.length > 0 && (
@@ -325,17 +546,18 @@ export default async function NamePage({ params }: Props) {
 
       {/* Discover More Name Comparisons */}
       {(() => {
-        const randomNames = getRandomNames(15).filter(r => r.slug !== slug);
+        const relatedPairs = getStaticComparisonsForSlug(slug, 12);
+        if (relatedPairs.length === 0) return null;
         return (
           <section className="mt-8 mb-8">
             <h2 className="text-xl font-bold mb-4">Discover More Name Comparisons</h2>
             <div className="flex flex-wrap gap-2">
-              {randomNames.map((r) => {
-                const [x, y] = [slug, r.slug].sort();
+              {relatedPairs.map((pair) => {
+                const otherName = pair.slugA === slug ? pair.nameB : pair.nameA;
                 return (
-                  <a key={r.slug} href={`/compare/${x}-vs-${y}`}
+                  <a key={`${pair.slugA}-${pair.slugB}`} href={`/compare/${pair.slugA}-vs-${pair.slugB}/`}
                     className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-purple-700 rounded-full">
-                    {n.name} vs {r.name}
+                    {n.name} vs {otherName}
                   </a>
                 );
               })}
@@ -371,21 +593,23 @@ export default async function NamePage({ params }: Props) {
         </p>
       </section>
 
+      <FeedbackButton pageId={slug} />
+
       <DataSourceBadge sources={[
-        { name: "SSA", url: "https://www.ssa.gov/oact/babynames/" },
-        { name: "Behind the Name", url: "https://www.behindthename.com" },
+        { name: "SSA Baby Names", url: "https://www.ssa.gov/oact/babynames/" },
+        { name: "US Census", url: "https://www.census.gov/topics/population/genealogy.html" },
+        { name: "Behind the Name", url: `https://www.behindthename.com/name/${encodeURIComponent(n.name.toLowerCase())}/` },
+        { name: "Wikipedia", url: `https://en.wikipedia.org/wiki/${encodeURIComponent(n.name)}_(given_name)` },
       ]} />
 
-      <CrossSiteLinks current="BabyNamely" />
+      <CrossSiteLinks current="NameBlooms" />
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         ...breadcrumbSchema(breadcrumbs),
-        dateModified: "2026-03-31",
         author: { "@type": "Organization", name: "DataPeek" },
       }) }} />
       {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         ...faqSchema(faqs),
-        dateModified: "2026-03-31",
         author: { "@type": "Organization", name: "DataPeek" },
       }) }} />}
     </div>

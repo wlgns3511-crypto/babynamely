@@ -5,11 +5,11 @@ import { formatPct, genderBg } from "@/lib/format";
 
 interface Props { params: Promise<{ slug: string }> }
 
-export const dynamicParams = false;
-export const revalidate = false;
+export const dynamicParams = true;
+export const revalidate = 86400;
 
 export function generateStaticParams() {
-  return getAllNames().slice(0, 300).map((n) => ({ slug: n.slug }));
+  return getAllNames().map((n) => ({ slug: n.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -20,10 +20,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${n.name} — Significado, Origen y Popularidad`,
     description: `${n.name} es un nombre de ${n.gender === 'boy' ? 'niño' : 'niña'}${n.origin ? ` de origen ${n.origin}` : ''}${n.meaning ? ` que significa "${n.meaning}"` : ''}. Tendencias de popularidad y nombres similares.`,
     alternates: {
-      canonical: `/es/name/${slug}`,
-      languages: { en: `/name/${slug}`, es: `/es/name/${slug}`, "x-default": `/name/${slug}` },
+      canonical: `/es/name/${slug}/`,
+      languages: { en: `/name/${slug}/`, es: `/es/name/${slug}/`, "x-default": `/name/${slug}/` },
     },
-    openGraph: { url: `/es/name/${slug}` },
+    openGraph: { url: `/es/name/${slug}/` },
   };
 }
 
@@ -39,7 +39,7 @@ export default async function NamePageEs({ params }: Props) {
   return (
     <div>
       <nav className="text-sm text-slate-500 mb-4">
-        <a href="/es/" className="hover:underline">Inicio</a> / <a href={`/es/names/gender/${n.gender}`} className="hover:underline">{n.gender === 'boy' ? 'Nombres de Niño' : 'Nombres de Niña'}</a> / <span className="text-slate-800">{n.name}</span>
+        <a href="/es/" className="hover:underline">Inicio</a> / <span className="text-slate-800">{n.name}</span>
       </nav>
 
       <div className="flex items-center gap-3 mb-2">
@@ -50,7 +50,7 @@ export default async function NamePageEs({ params }: Props) {
         {n.origin && <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm">{n.origin}</span>}
       </div>
       <p className="text-xs text-slate-400 mb-6">
-        <a href={`/name/${slug}`} className="text-purple-500 hover:underline">English version</a>
+        <a href={`/name/${slug}/`} className="text-purple-500 hover:underline">English version</a>
       </p>
 
       {/* Tarjeta de información */}
@@ -112,7 +112,7 @@ export default async function NamePageEs({ params }: Props) {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {similar.map((s) => (
               <div key={s.slug} className="p-3 rounded-lg border border-slate-200 hover:border-purple-300 text-center">
-                <a href={`/es/name/${s.slug}`} className="font-medium hover:underline">{s.name}</a>
+                <a href={`/es/name/${s.slug}/`} className="font-medium hover:underline">{s.name}</a>
                 {s.meaning && <div className="text-xs text-slate-400 mt-1">{s.meaning}</div>}
               </div>
             ))}
