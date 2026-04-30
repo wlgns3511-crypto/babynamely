@@ -18,11 +18,19 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// 2026-04-24 — MUST stay `false`. See app/name/[slug]/page.tsx for the
+// Next.js 16 soft-404 bug this flag works around. Use pm2-logrotate to
+// manage NoFallbackError stderr, not `dynamicParams = true`.
 export const dynamicParams = false;
 export const revalidate = false;
 
-// Cover 1880s–2000s (13 decades) — SSA data 1880–2008.
-const DECADES: { start: number; label: string; era: string }[] = [
+// Cover 1880s–2020s (15 decades) — SSA data 1880–2024.
+// 2026-04-28: extended from 13→15 decades. SSA 2024 data was already imported
+// but the array stopped at 2000s, hiding 2010s + 2020s usage from per-name
+// pages. 2020s is a partial decade (5 of 10 years through 2024) — table flags
+// this with "5/10 active years" and FAQ #3 uses avg-per-year ratio (not raw
+// totalPct) so the partial decade doesn't falsely look like a 50% decline.
+const DECADES: { start: number; label: string; era: string; partial?: boolean }[] = [
   { start: 1880, label: "1880s", era: "Gilded Age" },
   { start: 1890, label: "1890s", era: "Late Victorian" },
   { start: 1900, label: "1900s", era: "Progressive Era" },
@@ -36,6 +44,8 @@ const DECADES: { start: number; label: string; era: string }[] = [
   { start: 1980, label: "1980s", era: "Gen X mid" },
   { start: 1990, label: "1990s", era: "Millennial birth years" },
   { start: 2000, label: "2000s", era: "Gen Z early" },
+  { start: 2010, label: "2010s", era: "Gen Z late" },
+  { start: 2020, label: "2020s", era: "Gen Alpha", partial: true },
 ];
 
 // Inline DB helper — top-100 names by peak_pct DESC (canonical popularity axis).
@@ -97,8 +107,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const peakDecade = n.peak_year
     ? `${Math.floor(n.peak_year / 10) * 10}s`
     : "unknown decade";
-  const title = `${n.name} Popularity by Decade — 1880s to 2000s Trajectory`;
-  const description = `${n.name}&rsquo;s full decade-by-decade popularity arc: 1880s through 2000s (13 decades) using SSA data. Peak decade: ${peakDecade}${n.peak_pct ? ` at ${(n.peak_pct * 100).toFixed(2)}%` : ""}. Decade shares, peer names that peaked together, and cultural era context.`;
+  const title = `${n.name} Popularity by Decade — 1880s to 2020s Trajectory`;
+  const description = `${n.name}&rsquo;s full decade-by-decade popularity arc: 1880s through 2020s (15 decades) using SSA data. Peak decade: ${peakDecade}${n.peak_pct ? ` at ${(n.peak_pct * 100).toFixed(2)}%` : ""}. Decade shares, peer names that peaked together, and cultural era context.`;
   return {
     title,
     description,
@@ -196,7 +206,7 @@ export default async function NameByDecadePage({ params }: Props) {
   const faqs = [
     {
       question: `In which decade was ${n.name} most popular?`,
-      answer: `${n.name} peaked in the ${peakDecade.label} (${peakDecade.start}&ndash;${peakDecade.start + 9}) with a summed decade share of ${peakDecade.totalPct.toFixed(2)}%${peakYearInDecade ? `. The single best year within that decade was ${peakYearInDecade.year} (${formatPct(peakYearInDecade.pct)} of US ${n.gender === "boy" ? "boys" : "girls"})` : ""}. Across the full 1880&ndash;2008 SSA window, ${n.name} was actively recorded in ${activeDecades.length} decade${activeDecades.length === 1 ? "" : "s"} at more than 10% of that peak level.`,
+      answer: `${n.name} peaked in the ${peakDecade.label} (${peakDecade.start}&ndash;${peakDecade.start + 9}) with a summed decade share of ${peakDecade.totalPct.toFixed(2)}%${peakYearInDecade ? `. The single best year within that decade was ${peakYearInDecade.year} (${formatPct(peakYearInDecade.pct)} of US ${n.gender === "boy" ? "boys" : "girls"})` : ""}. Across the full 1880&ndash;2024 SSA window, ${n.name} was actively recorded in ${activeDecades.length} decade${activeDecades.length === 1 ? "" : "s"} at more than 10% of that peak level.`,
     },
     {
       question: `What does the decade share percentage mean?`,
@@ -204,7 +214,7 @@ export default async function NameByDecadePage({ params }: Props) {
     },
     {
       question: `Is ${n.name}&rsquo;s trajectory rising, falling, or steady?`,
-      answer: `${trajectoryLabel} The name ${firstYear ? `first appeared in SSA records in ${firstYear}` : "has SSA data across multiple decades"} and ${lastYear ? `last appeared in ${lastYear}` : "has varied presence through recent decades"}. From peak decade (${peakDecade.label}) to the most recent available decade, the decade share ${lastDecade && peakDecade.totalPct > 0 ? `is now ${((lastDecade.totalPct / peakDecade.totalPct) * 100).toFixed(0)}% of its peak level` : "has shifted"}.`,
+      answer: `${trajectoryLabel} The name ${firstYear ? `first appeared in SSA records in ${firstYear}` : "has SSA data across multiple decades"} and ${lastYear ? `last appeared in ${lastYear}` : "has varied presence through recent decades"}. From peak decade (${peakDecade.label}) to the most recent available decade, the per-year average share ${lastDecade && peakDecade.avgPct > 0 ? `is now ${((lastDecade.avgPct / peakDecade.avgPct) * 100).toFixed(0)}% of its peak level (per-year avg comparison so the partial 2020s decade — 5 of 10 years — doesn&rsquo;t falsely look like a 50% drop)` : "has shifted"}.`,
     },
     {
       question: `Which other ${n.gender === "boy" ? "boys' " : "girls' "}names peaked in the same decade as ${n.name}?`,
@@ -212,7 +222,7 @@ export default async function NameByDecadePage({ params }: Props) {
     },
     {
       question: `Why does ${n.name}&rsquo;s decade share drop even when the name is still in use?`,
-      answer: `The SSA tracks over 100,000 distinct baby names. In 1900, the top-10 names accounted for ~40% of all boys and ~25% of all girls. By 2008, the top-10 accounted for only ~8% of boys and ~8% of girls &mdash; parents pick from a much wider pool today. So a name that now has 0.1% share may still rank in the top-100, while a 1900 name with 0.1% share might rank outside the top-1000. Rank (see parent page) is the fairer cross-decade comparison.`,
+      answer: `The SSA tracks over 100,000 distinct baby names. In 1900, the top-10 names accounted for ~32% of all boys and ~18% of all girls (we computed this from the 1900 SSA tape directly). By 2024, the top-10 accounts for only ~8.0% of boys and ~7.1% of girls &mdash; parents pick from a much wider pool today. So a name that now has 0.1% share may still rank in the top-100, while a 1900 name with 0.1% share might rank outside the top-1000. Rank (see parent page) is the fairer cross-decade comparison.`,
     },
     {
       question: `What is the &ldquo;100-year rule&rdquo; and does it apply to ${n.name}?`,
@@ -220,7 +230,7 @@ export default async function NameByDecadePage({ params }: Props) {
     },
     {
       question: `How does ${n.name} compare to other names by peak popularity?`,
-      answer: `${n.name} ranks ${nameRank ? `#${nameRank.toLocaleString()} of ${nameStats.totalNames.toLocaleString()}` : "within the tracked names"} by peak popularity across the full 1880&ndash;2008 SSA series. ${n.peak_pct && nameStats.avgPeakPct ? `Its peak share (${(n.peak_pct * 100).toFixed(2)}%) is ${(n.peak_pct / nameStats.avgPeakPct).toFixed(1)}x the average tracked name.` : ""} Peak-popularity rank is time-neutral &mdash; it captures how dominant the name was at its best moment, regardless of era.`,
+      answer: `${n.name} ranks ${nameRank ? `#${nameRank.toLocaleString()} of ${nameStats.totalNames.toLocaleString()}` : "within the tracked names"} by peak popularity across the full 1880&ndash;2024 SSA series. ${n.peak_pct && nameStats.avgPeakPct ? `Its peak share (${(n.peak_pct * 100).toFixed(2)}%) is ${(n.peak_pct / nameStats.avgPeakPct).toFixed(1)}x the average tracked name.` : ""} Peak-popularity rank is time-neutral &mdash; it captures how dominant the name was at its best moment, regardless of era.`,
     },
   ];
 
@@ -266,12 +276,14 @@ export default async function NameByDecadePage({ params }: Props) {
           </span>
         </h1>
         <p className="text-lg text-slate-700">
-          The full 13-decade arc for <strong>{n.name}</strong>: 1880s through the
-          2000s from Social Security Administration records, with peer names
-          that peaked in the same generation and historical-era context.
+          The full 15-decade arc for <strong>{n.name}</strong>: 1880s through the
+          2020s from Social Security Administration records, with peer names
+          that peaked in the same generation and historical-era context. The
+          2020s row is a partial decade (5 of 10 years through 2024); per-year
+          averages stay comparable across the table.
         </p>
         <div className="mt-3">
-          <FreshnessTag source="SSA baby-name popularity (1880–2008)" />
+          <FreshnessTag source="SSA baby-name popularity (1880–2024)" />
         </div>
       </header>
 
@@ -340,7 +352,10 @@ export default async function NameByDecadePage({ params }: Props) {
         </h2>
         <p className="mb-4 text-sm text-slate-600">
           Summed SSA percentage over each decade. A full 10-year decade where{" "}
-          {n.name} averaged 1% of babies per year would total 10% here.
+          {n.name} averaged 1% of babies per year would total 10% here. The 2020s
+          bar covers 5 years (2020&ndash;2024) so its absolute length naturally
+          undershoots a full decade &mdash; check the &ldquo;Avg per year&rdquo;
+          column in the table below for a fair cross-decade read.
         </p>
         <div className="space-y-1.5">
           {decadeRows.map((d) => {
@@ -409,37 +424,45 @@ export default async function NameByDecadePage({ params }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {decadeRows.map((d) => (
-                <tr
-                  key={d.start}
-                  className={
-                    d.start === peakDecade.start && d.totalPct > 0
-                      ? n.gender === "boy"
-                        ? "bg-blue-50"
-                        : "bg-pink-50"
-                      : ""
-                  }
-                >
-                  <td className="px-3 py-1.5 font-semibold text-slate-900">
-                    {d.label}
-                  </td>
-                  <td className="px-3 py-1.5 text-slate-600">{d.era}</td>
-                  <td className="px-3 py-1.5 text-right font-mono">
-                    {d.totalPct > 0 ? d.totalPct.toFixed(2) + "%" : "—"}
-                  </td>
-                  <td className="px-3 py-1.5 text-right font-mono text-slate-500">
-                    {d.avgPct > 0 ? (d.avgPct * 100).toFixed(3) + "%" : "—"}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {d.peakInDecade
-                      ? `${d.peakInDecade.year} (${formatPct(d.peakInDecade.pct)})`
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-1.5 text-center text-slate-500">
-                    {d.yearsCount}/10
-                  </td>
-                </tr>
-              ))}
+              {decadeRows.map((d) => {
+                const decadeMaxYears = d.partial ? 5 : 10;
+                return (
+                  <tr
+                    key={d.start}
+                    className={
+                      d.start === peakDecade.start && d.totalPct > 0
+                        ? n.gender === "boy"
+                          ? "bg-blue-50"
+                          : "bg-pink-50"
+                        : ""
+                    }
+                  >
+                    <td className="px-3 py-1.5 font-semibold text-slate-900">
+                      {d.label}
+                      {d.partial && (
+                        <span className="ml-1.5 text-xs font-normal text-amber-700">
+                          (partial · through 2024)
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 text-slate-600">{d.era}</td>
+                    <td className="px-3 py-1.5 text-right font-mono">
+                      {d.totalPct > 0 ? d.totalPct.toFixed(2) + "%" : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-mono text-slate-500">
+                      {d.avgPct > 0 ? (d.avgPct * 100).toFixed(3) + "%" : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      {d.peakInDecade
+                        ? `${d.peakInDecade.year} (${formatPct(d.peakInDecade.pct)})`
+                        : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-center text-slate-500">
+                      {d.yearsCount}/{decadeMaxYears}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -505,7 +528,9 @@ export default async function NameByDecadePage({ params }: Props) {
               How many of the decade&rsquo;s 10 years had at least 5 SSA
               records for {n.name}. The SSA suppresses names with fewer than 5
               per year for privacy, so low active-year counts indicate a name
-              barely used.
+              barely used. The 2020s row uses a 5-year denominator (2020&ndash;2024)
+              since SSA hasn&rsquo;t yet released the 2025 file &mdash; not
+              because the decade has fewer years.
             </dd>
           </div>
           <div>
@@ -538,7 +563,11 @@ export default async function NameByDecadePage({ params }: Props) {
         </dl>
       </section>
 
-      {/* Parent-page back + navigation */}
+      {/* Parent-page back + navigation.
+          2026-04-28: Removed middle-names card (was middle slot). /middle-names/*
+          is robots-disallowed for AdSense crawlers (scaled-content remediation).
+          Replaced with /compare/ hub so users still get a "next step" card and
+          the grid stays balanced at 3 cards. */}
       <section className="my-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href={`/name/${slug}/`}
@@ -561,17 +590,17 @@ export default async function NameByDecadePage({ params }: Props) {
           </div>
         </Link>
         <Link
-          href={`/middle-names/${slug}/`}
+          href="/compare/"
           className="block rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-fuchsia-50 p-5 transition hover:border-purple-400 hover:shadow-md"
         >
           <div className="text-xs font-semibold uppercase tracking-wide text-purple-700">
-            Middle names
+            Curated comparisons
           </div>
           <div className="mt-1 font-semibold text-slate-900">
-            Middle names for {n.name} &rarr;
+            104 hand-picked name pairs &rarr;
           </div>
           <div className="mt-1 text-sm text-slate-600">
-            Curated pairings that match {n.name}&rsquo;s rhythm and era.
+            Side-by-side popularity, origin, and trend curves for the most-searched pairings.
           </div>
         </Link>
         <Link
@@ -620,7 +649,7 @@ export default async function NameByDecadePage({ params }: Props) {
       <DataSourceBadge
         sources={[
           {
-            name: "SSA baby-name popularity (1880–2008)",
+            name: "SSA baby-name popularity (1880–2024)",
             url: "https://www.ssa.gov/oact/babynames/limits.html",
           },
           {

@@ -9,6 +9,12 @@ export const metadata: Metadata = {
     languages: { en: "/", es: "/es/", "x-default": "/" },
   },
   openGraph: { url: "/es/" },
+  // 2026-04-28 noindex (consistency fix). The full /es/name/* subtree is
+  // noindex+follow per AdSense scaled-content remediation (file header on
+  // /es/name/[slug]/page.tsx). Keeping the /es/ index indexable while every
+  // page it links to is noindex creates a dead-end portal that confuses
+  // crawlers and offers no SEO value. UX preserved for direct visitors.
+  robots: { index: false, follow: true },
 };
 
 export default function HomeEs() {

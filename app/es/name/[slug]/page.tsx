@@ -5,7 +5,12 @@ import { formatPct, genderBg } from "@/lib/format";
 
 interface Props { params: Promise<{ slug: string }> }
 
-export const dynamicParams = true;
+// 2026-04-28 — pinned to `false` to avoid Next.js 16 soft-404 bug confirmed
+// 2026-04-24: `dynamicParams = true` + `notFound()` + SSG caches the not-found
+// response as a 200 prerender (x-nextjs-prerender:1, x-nextjs-cache:HIT),
+// producing a soft-404 that HCU penalizes. Same pattern used in
+// /name/[slug]/, /middle-names/[slug]/, /compare/[slugs]/, /name/[slug]/by-decade/.
+export const dynamicParams = false;
 export const revalidate = 86400;
 
 export function generateStaticParams() {
@@ -24,6 +29,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       languages: { en: `/name/${slug}/`, es: `/es/name/${slug}/`, "x-default": `/name/${slug}/` },
     },
     openGraph: { url: `/es/name/${slug}/` },
+    // 2026-04-28 noindex (AdSense scaled-content remediation, /middle-names/
+    // pattern). Spanish translations of 7,765 English names without independent
+    // editorial work are scaled-content risk. Direct visitors still see the
+    // page; Google does not count it as indexable. Full-indexing pathway
+    // requires per-page Spanish v2 commentary + bidirectional hreflang —
+    // deferred. UPGRADE BLOCKER: Cron-comment to remove noindex once Spanish
+    // commentary lands.
+    robots: { index: false, follow: true },
   };
 }
 

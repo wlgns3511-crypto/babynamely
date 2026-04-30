@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTopNamesForYear, getAvailableYears } from "@/lib/db";
+import { getYearInsight } from "@/lib/cluster-insights";
 import { formatPct } from "@/lib/format";
 import { itemListSchema } from "@/lib/schema";
 
 interface Props { params: Promise<{ year: string }> }
 
+// 2026-04-24 — MUST stay `false`. See app/name/[slug]/page.tsx for the
+// Next.js 16 soft-404 bug this flag works around.
 export const dynamicParams = false;
 
 export function generateStaticParams() {
@@ -28,12 +31,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function YearPage({ params }: Props) {
   const { year: yearStr } = await params;
   const year = parseInt(yearStr);
-  if (isNaN(year) || year < 1880 || year > 2010) notFound();
+  if (isNaN(year) || year < 1880 || year > 2024) notFound();
 
   const topNames = getTopNamesForYear(year, 50);
   const boys = topNames.filter(n => n.gender === 'boy');
   const girls = topNames.filter(n => n.gender === 'girl');
   const years = getAvailableYears().filter(y => y % 10 === 0 || y >= 2000);
+  const insight = getYearInsight(year);
 
   const allNames = [...boys, ...girls].map(n => ({ name: n.name, url: `/name/${n.slug}/` }));
 
@@ -55,6 +59,64 @@ export default async function YearPage({ params }: Props) {
           </a>
         ))}
       </div>
+
+      {insight.narrative.length > 0 && (
+        <section
+          data-upgrade="year-insight"
+          aria-label={`Snapshot for ${year}`}
+          className="my-8 rounded-xl border border-slate-200 bg-white"
+        >
+          <header className="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900">Snapshot · {year}</h2>
+            <span className="text-xs uppercase tracking-wide text-slate-500">SSA national data</span>
+          </header>
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100 border-b border-slate-100">
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">#1 Boy</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                {insight.topBoy ? (
+                  <a href={`/name/${insight.topBoy.slug}/`} className="hover:underline">{insight.topBoy.name}</a>
+                ) : '—'}
+              </div>
+              {insight.topBoy && (
+                <div className="text-xs text-slate-500 mt-1">{formatPct(insight.topBoy.pct)}</div>
+              )}
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">#1 Girl</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                {insight.topGirl ? (
+                  <a href={`/name/${insight.topGirl.slug}/`} className="hover:underline">{insight.topGirl.name}</a>
+                ) : '—'}
+              </div>
+              {insight.topGirl && (
+                <div className="text-xs text-slate-500 mt-1">{formatPct(insight.topGirl.pct)}</div>
+              )}
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">Top-10 share</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                B {(insight.top10ShareBoy * 100).toFixed(1)}%
+              </div>
+              <div className="text-xs text-slate-500 mt-1">G {(insight.top10ShareGirl * 100).toFixed(1)}%</div>
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">Biggest riser</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                {insight.biggestRiser ? (
+                  <a href={`/name/${insight.biggestRiser.slug}/`} className="hover:underline">{insight.biggestRiser.name}</a>
+                ) : '—'}
+              </div>
+              {insight.biggestRiser && (
+                <div className="text-xs text-slate-500 mt-1">+{insight.biggestRiser.rankChange} vs {year - 1}</div>
+              )}
+            </div>
+          </div>
+          <div className="px-5 py-4 space-y-3 text-sm leading-relaxed text-slate-700">
+            {insight.narrative.map((p, i) => <p key={i}>{p}</p>)}
+          </div>
+        </section>
+      )}
 
       <div className="grid md:grid-cols-2 gap-8">
         <section>

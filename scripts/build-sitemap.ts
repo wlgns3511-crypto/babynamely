@@ -5,13 +5,16 @@
  * PRUNING HISTORY (post-HCU March 2026):
  *   Pre-prune: ~20,676 URLs. Dominated by:
  *     → /name/[slug]        × 6,782 (real SSA-verified name entities — KEEP)
- *     → /es/name/[slug]     × 6,782 (thin Spanish translation — DROP)
- *     → /middle-names/[slug] × 6,782 (derivative middle-name combos — DROP)
+ *     → /es/name/[slug]     × 6,782 (thin Spanish translation — still DROP)
+ *     → /middle-names/[slug] × 6,782 (REVIVED 2026-04-24 — see below)
  *
- *   2026-04-22: Option B+ prune (conservative). KEEP all 6,782 real name
- *              entities + 151 by-decade + state/origin/year hubs + editorial.
- *              DROP /es/name/ thin translations + /middle-names/ derivatives.
- *              Routes stay live via dynamicParams — existing URLs remain 200.
+ *   2026-04-22: Option B+ prune (conservative). DROP /es/name/ + /middle-names/.
+ *
+ *   2026-04-24: REVIVED /middle-names/. GSC data showed "middle names for {X}"
+ *              is the top query pattern actually driving traffic — dropping it
+ *              was strategic error. Content is not thin (20 curated suggestions
+ *              + tips + FAQ schema). All 6,782 now back in sitemap. /es/name/
+ *              stays dropped pending separate Spanish market evaluation.
  *
  * USAGE:
  *   npx tsx scripts/build-sitemap.ts
@@ -59,7 +62,13 @@ add({ url: `${SITE_URL}/terms/`, priority: '0.3', changefreq: 'monthly' });
 add({ url: `${SITE_URL}/contact/`, priority: '0.5', changefreq: 'monthly' });
 add({ url: `${SITE_URL}/disclaimer/`, priority: '0.3', changefreq: 'monthly' });
 add({ url: `${SITE_URL}/methodology/`, priority: '0.5', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/es/`, priority: '0.6', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/editorial-policy/`, priority: '0.5', changefreq: 'monthly' });
+// 2026-04-28 /es/ removed — consistency fix. The full /es/name/* subtree is
+// noindex+follow (AdSense scaled-content remediation). A dead-end portal that
+// links exclusively to noindex pages should not be announced in sitemap.
+// Kept as comment for audit trail. Restore alongside Spanish v2 commentary
+// when /es/name/ goes back to indexable.
+// add({ url: `${SITE_URL}/es/`, priority: '0.6', changefreq: 'monthly' });
 
 // Guide pages
 add({ url: `${SITE_URL}/guide/`, priority: '0.8', changefreq: 'weekly' });
@@ -82,9 +91,29 @@ for (const l of 'abcdefghijklmnopqrstuvwxyz'.split('')) {
 // HCU doorway-thin content + scaled-content risk. Pages still render via
 // generateStaticParams (CAP=100); just not announced in sitemap.
 
-// ─── /middle-names/[slug] × 6,782 DROPPED 2026-04-22 (HCU defense) ──────
-// Derivative middle-name combos over same name entities. Thin/duplicative
-// content. Route still renders via dynamicParams — existing URLs remain 200.
+// ─── /middle-names/[slug] × 6,782 RE-DROPPED 2026-04-26 ──────────────────
+// 2026-04-22: dropped (thin scaled content concern).
+// 2026-04-24: REVIVED based on GSC query data (top queries = "middle names
+//             for X"). Strategic reversal — assumed traffic value > thin-
+//             content risk.
+// 2026-04-26: AdSense policy violation received ("광고 게재가 준비되지
+//             않은 사이트 / 가치가 별로 없는 콘텐츠"). The 2026-04-24 reversal
+//             was the wrong call — 6,782 derivative pages × ~1,400 words each
+//             (20 name-combo grid + 3-Q FAQ template) is exactly the
+//             "scaled content abuse" pattern Google now penalizes harder
+//             than thin-content historically did.
+// Decision: re-drop from sitemap + add noindex meta in page.tsx. Routes still
+// render (UX preserved for direct visitors) but Google sees neither sitemap
+// announcement nor index allowance. ~6,782 URLs removed from announcement.
+// Block intentionally retained as comment for audit trail / future revival
+// guard rail.
+//
+// const nbDbForMiddle = new Database(path.resolve(__dirname, '..', 'data', 'names.db'), { readonly: true, fileMustExist: true });
+// const middleNameRows = nbDbForMiddle.prepare('SELECT slug FROM names ORDER BY slug').all() as { slug: string }[];
+// nbDbForMiddle.close();
+// for (const n of middleNameRows) {
+//   add({ url: `${SITE_URL}/middle-names/${n.slug}/`, priority: '0.65', changefreq: 'monthly' });
+// }
 
 // Insights
 add({ url: `${SITE_URL}/insights/`, priority: '0.8', changefreq: 'weekly' });
@@ -133,12 +162,16 @@ for (const n of top100ByDecade) {
 }
 
 // ─── Cardinality guard ────────────────────────────────────────────────────
+// 2026-04-24: budget raised 8.5K → 15K after middle-names revival.
+// 2026-04-26: budget restored 15K → 8.5K after middle-names re-drop
+//             (AdSense policy violation triggered re-evaluation).
+// /name/ (6,782) + hubs/guides/blog/state/origin/year (~500) ≈ 7.3K.
+// If this trips, suspect /middle-names/ (6,782) or /es/name/ (6,782) accidentally re-added.
 if (entries.length > 8500 && !process.env.SITEMAP_LARGE_OK) {
   throw new Error(
-    `nameblooms sitemap has ${entries.length.toLocaleString()} URLs — Option B+ budget is ~7.2K.\n` +
-      `Did /es/name/ (6,782) or /middle-names/ (6,782) get re-added?\n` +
-      `That's exactly the loop that caused the original cardinality collapse.\n` +
-      `Run with SITEMAP_LARGE_OK=1 if you genuinely meant to expand the tier.`,
+    `nameblooms sitemap has ${entries.length.toLocaleString()} URLs — budget is 8.5K after 2026-04-26 middle-names re-drop.\n` +
+      `Did /middle-names/ (6,782) or /es/name/ (6,782) get re-added? Both are scaled-content traps.\n` +
+      `Run with SITEMAP_LARGE_OK=1 if you genuinely meant to expand further.`,
   );
 }
 

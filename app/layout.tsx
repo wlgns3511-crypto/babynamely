@@ -1,26 +1,30 @@
 import type { Metadata } from "next";
-import { headers } from 'next/headers';
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { UpgradeAnalytics } from "@/components/upgrades/UpgradeAnalytics";
 
+// 2026-04-23 structural fix — do NOT reintroduce `headers()` in this layout.
+// Any dynamic API (headers, cookies, draftMode, searchParams) in the root
+// layout forces EVERY route in the tree to render dynamically (ƒ). That
+// silently:
+//   1. Disables SSG — no prerendered HTML for any dynamic route
+//   2. Emits `cache-control: private,no-cache,no-store` → CF edge cache ~1%
+//   3. Bypasses `dynamicParams=false` validation → Next.js 16 returns
+//      HTTP 200 + 404 HTML body (soft-404) for unknown slugs
+// costbycity fix (35d1dde) restored SSG portfolio-wide. Keep `<html lang>`
+// static — /es/ subtree loses dynamic lang attribute; acceptable because
+// hreflang alternates still signal the Spanish URL.
+
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 const SITE_NAME = "NameBlooms";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nameblooms.com";
 
-const ROOT_LOCALES = ['es'] as const;
-type RootLocale = (typeof ROOT_LOCALES)[number];
 const ROOT_ALTERNATE_LANGUAGES = {
   en: `${SITE_URL}/`,
   es: `${SITE_URL}/es/`,
   'x-default': `${SITE_URL}/`,
 } as const;
-
-function getHtmlLang(pathname: string | null): string {
-  const locale = pathname?.split('/').filter(Boolean)[0] as RootLocale | undefined;
-  return locale && ROOT_LOCALES.includes(locale) ? locale : 'en';
-}
 
 const GA_STREAM_ID = "G-J2P2TDDWGF";
 
@@ -29,18 +33,20 @@ export const metadata: Metadata = {
   description: "Discover the perfect baby name. Explore 6,000+ names with meanings, origins, popularity trends since 1880, and side-by-side comparisons.",
   metadataBase: new URL(SITE_URL),
   alternates: { languages: ROOT_ALTERNATE_LANGUAGES },
-  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large" } },
+  // robots metadata intentionally omitted at root (2026-04-23 portfolio fix).
+  // Default behavior (index, follow) is already Google's assumption — making
+  // it explicit at root caused a DUPLICATE `<meta name="robots">` tag on
+  // notFound() pages: Next.js 16 adds `content="noindex"` for 404 responses
+  // but fails to override the root's `content="index, follow"`, leaving BOTH
+  // in the HTML. Google picks the first → pruned/404 URLs stay indexable.
   openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US" },
   twitter: { card: "summary_large_image" },
   other: { "google-adsense-account": "ca-pub-5724806562146685" },
 };
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const headerStore = await headers();
-  const pathname = headerStore.get('x-pathname');
-  const htmlLang = getHtmlLang(pathname);
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang={htmlLang}>
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
@@ -95,7 +101,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               <a href="/insights/" className="hover:text-purple-600">Insights</a>
               <a href="/guide/" className="hover:text-purple-600">Guides</a>
               <a href="/blog/" className="hover:text-purple-600">Articles</a>
-              <a href="/es/" className="text-slate-400 hover:text-purple-600 text-xs">ES</a>
+              {/* 2026-04-28 — global "ES" toggle removed. /es/* is robots-disallowed
+                  for AdSense crawler (scaled-content remediation). Linking from
+                  every indexable page would route AdSense reviewer into the
+                  walled-off Spanish surface. Direct Spanish visitors can still
+                  type /es/ — page exists, just unlinked from indexable graph. */}
             </nav>
           </div>
         </header>

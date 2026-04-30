@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAllStates, getStateBySlug } from '@/lib/states-data';
+import { getStateInsight } from '@/lib/state-insights';
 import { breadcrumbSchema } from '@/lib/schema';
 import { StateRich } from '@/components/state/StateRich';
 
@@ -49,6 +50,12 @@ export default async function StatePage({ params }: Props) {
   ];
 
   const others = getAllStates().filter((s) => s.slug !== slug).slice(0, 6);
+  const insight = getStateInsight(slug);
+  const leanLabel: Record<NonNullable<ReturnType<typeof getStateInsight>>['vintageLean'], string> = {
+    vintage_lean: 'Vintage-leaning',
+    balanced: 'Balanced era mix',
+    modern: 'Modern-leaning',
+  };
 
   return (
     <article className="max-w-4xl mx-auto">
@@ -84,6 +91,112 @@ export default async function StatePage({ params }: Props) {
           </div>
         </div>
       </Link>
+
+      {insight && insight.narrative.length > 0 && (
+        <section
+          data-upgrade="state-insight"
+          aria-label={`Snapshot for ${state.name}`}
+          className="mb-10 rounded-xl border border-slate-200 bg-white"
+        >
+          <header className="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900">Snapshot · {state.name}</h2>
+            <span className="text-xs uppercase tracking-wide text-slate-500">
+              {leanLabel[insight.vintageLean]}
+            </span>
+          </header>
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100 border-b border-slate-100">
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">National top-10 overlap</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                B {insight.topBoyOverlap}/10 · G {insight.topGirlOverlap}/10
+              </div>
+              <div className="text-xs text-slate-500 mt-1">vs SSA 2024 top-10</div>
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">Distinctive picks</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                {insight.distinctiveBoys.length + insight.distinctiveGirls.length}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">outside national top-50</div>
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">Avg peak year</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                {insight.averagePeakYear ?? '—'}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">of state top-20</div>
+            </div>
+            <div className="px-5 py-3">
+              <div className="text-xs text-slate-500">Era profile</div>
+              <div className="text-base font-bold text-slate-900 mt-1">
+                {leanLabel[insight.vintageLean]}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                {insight.vintageLean === 'vintage_lean'
+                  ? 'pre-1990 average'
+                  : insight.vintageLean === 'balanced'
+                    ? '1990–2014 average'
+                    : '2015+ average'}
+              </div>
+            </div>
+          </div>
+          <div className="px-5 py-4 space-y-3 text-sm leading-relaxed text-slate-700">
+            {insight.narrative.map((p, i) => <p key={i}>{p}</p>)}
+          </div>
+          {(insight.distinctiveBoys.length + insight.distinctiveGirls.length) > 0 && (
+            <div className="border-t border-slate-100 px-5 py-3">
+              <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                Distinctive picks · outside national top-50
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[...insight.distinctiveBoys, ...insight.distinctiveGirls].map((r) => (
+                  r.slug ? (
+                    <a
+                      key={`${r.name}-${r.slug}`}
+                      href={`/name/${r.slug}/`}
+                      className="text-xs px-2.5 py-1 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition"
+                    >
+                      <span className="font-medium text-slate-800">{r.name}</span>
+                    </a>
+                  ) : (
+                    <span
+                      key={r.name}
+                      className="text-xs px-2.5 py-1 rounded-full border border-slate-200 text-slate-700"
+                    >
+                      {r.name}
+                    </span>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+          {(insight.matchedBoys.some((r) => r.nationalRank !== null) || insight.matchedGirls.some((r) => r.nationalRank !== null)) && (
+            <div className="border-t border-slate-100 px-5 py-3">
+              <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                Matched against SSA 2024 national rank
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[...insight.matchedBoys, ...insight.matchedGirls]
+                  .filter((r) => r.nationalRank !== null)
+                  .sort((a, b) => (a.nationalRank ?? 999) - (b.nationalRank ?? 999))
+                  .slice(0, 12)
+                  .map((r) => (
+                    r.slug ? (
+                      <a
+                        key={`${r.name}-${r.slug}`}
+                        href={`/name/${r.slug}/`}
+                        className="text-xs px-2.5 py-1 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition"
+                      >
+                        <span className="font-medium text-slate-800">{r.name}</span>
+                        <span className="text-slate-500 ml-1">#{r.nationalRank}</span>
+                      </a>
+                    ) : null
+                  ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6 mb-10">
         <section>
@@ -169,15 +282,14 @@ export default async function StatePage({ params }: Props) {
                 <div className="text-sm font-bold text-slate-900">{s.name}</div>
               </Link>
             ))}
-      
-      <StateRich slug={slug} state={state} />
-
-    </div>
+          </div>
           <p className="mt-3 text-sm">
             <Link href="/state/" className="text-purple-700 hover:underline">View all states &rarr;</Link>
           </p>
         </nav>
       )}
+
+      <StateRich slug={slug} state={state} />
     </article>
   );
 }

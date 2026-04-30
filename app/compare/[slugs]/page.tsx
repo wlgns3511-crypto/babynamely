@@ -6,6 +6,9 @@ import { AdSlot } from "@/components/AdSlot";
 import { ComparisonBar } from "@/components/ComparisonBar";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
+// 2026-04-24 — MUST stay `false`. See app/name/[slug]/page.tsx for the
+// Next.js 16 soft-404 bug this flag works around. Compare is the biggest
+// offender for NoFallbackError stderr spam — fix at the log layer, not here.
 export const dynamicParams = false;
 export const revalidate = 86400; // 24시간 ISR 캐시
 

@@ -186,7 +186,22 @@ function toStaticComparisonPair(pair: ComparisonPair): ComparisonPair {
 
 export function getStaticComparisons(limit = COMPARISON_PRERENDER_LIMIT): ComparisonPair[] {
   if (!_staticComparisons) {
-    _staticComparisons = getTopComparisons(COMPARISON_PRERENDER_LIMIT).map(toStaticComparisonPair);
+    // HCU 2026-04-24: source of truth = scripts/build-keep-sets.ts JSON dump.
+    // Includes top-100 DB slice (popularity_score DESC) + GSC evidence union
+    // (4 URLs earning ≥1 click that popularity ordering alone would drop —
+    // same pattern that killed 100% of earners on degreewize/zippeek/
+    // guidebycity cleanups, must prevent here). Rebuild via
+    // `npx tsx scripts/build-keep-sets.ts` before deploy.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const keepList = require('./generated/compare-keep.json') as string[];
+    _staticComparisons = keepList.map((slugs) => {
+      const idx = slugs.lastIndexOf('-vs-');
+      const slugA = slugs.slice(0, idx);
+      const slugB = slugs.slice(idx + 4);
+      const nameA = getNameBySlug(slugA)?.name ?? slugA;
+      const nameB = getNameBySlug(slugB)?.name ?? slugB;
+      return { slugA, slugB, nameA, nameB };
+    });
   }
   return _staticComparisons.slice(0, limit);
 }

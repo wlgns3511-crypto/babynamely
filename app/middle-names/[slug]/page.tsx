@@ -6,7 +6,23 @@ import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 
 interface Props { params: Promise<{ slug: string }> }
 
-export const dynamicParams = true;
+// 2026-04-26 — AdSense policy violation ("가치가 별로 없는 콘텐츠")
+// triggered re-evaluation. Page tree:
+//   2026-04-22: dropped from sitemap (thin scaled-content concern)
+//   2026-04-24: revived based on GSC top-query data ("middle names for X")
+//   2026-04-26: AdSense violation arrived → 4/24 reversal was wrong call
+//
+// Resolution: route still renders for direct visitors (UX preserved) but is
+//   1. removed from sitemap (build-sitemap.ts comment block)
+//   2. marked noindex,follow (metadata.robots below) so Google does not
+//      treat the 6,782 derivative pages as scaled-content abuse
+//
+// dynamicParams pinned to `false` to avoid the Next.js 16 soft-404 bug
+// confirmed on this codebase 2026-04-24: `dynamicParams = true` +
+// `notFound()` + SSG caches the not-found response as a 200 prerender
+// (x-nextjs-prerender: 1, x-nextjs-cache: HIT), producing a soft-404 that
+// HCU penalizes. All 6,782 names prerender via MIDDLE_NAME_PRERENDER_LIMIT.
+export const dynamicParams = false;
 export const revalidate = 86400;
 
 export async function generateStaticParams() {
@@ -22,6 +38,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: `Looking for the perfect middle name for ${n.name}? Browse 20 popular middle name ideas that pair beautifully with ${n.name}.`,
     alternates: { canonical: `/middle-names/${slug}/` },
     openGraph: { url: `/middle-names/${slug}/` },
+    // 2026-04-26 noindex (AdSense scaled-content remediation). See file
+    // header comment for full reasoning. Direct visitors still see the page;
+    // Google does not count it as a unique indexable page.
+    robots: { index: false, follow: true },
   };
 }
 

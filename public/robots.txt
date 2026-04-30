@@ -3,6 +3,23 @@ Allow: /
 Disallow: /api/
 Disallow: /_next/
 Disallow: /embed/
+# 2026-04-28 — block scaled-content trees from crawl (AdSense remediation).
+# /middle-names/* (6,782 pages) — original 2026-04-26 violation pattern (20-name grid + 3-Q FAQ template).
+# /es/*           (6,782 + index)  — Spanish translations without independent editorial work.
+# Both are noindex+follow + sitemap-excluded; this adds robots layer so AdSense
+# crawler (Mediapartners-Google) and review tooling don't follow internal links
+# into the scaled-content surface even when they exist on rendered pages.
+Disallow: /middle-names/
+Disallow: /es/
+
+# ── AdSense / Ads quality crawlers — explicit scaled-content exclusion ──
+User-Agent: Mediapartners-Google
+Disallow: /middle-names/
+Disallow: /es/
+
+User-Agent: AdsBot-Google
+Disallow: /middle-names/
+Disallow: /es/
 
 # ── SEO scraper tools (zero user-facing traffic) ──
 User-Agent: AhrefsBot

@@ -14,6 +14,8 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// 2026-04-24 — MUST stay `false`. See app/name/[slug]/page.tsx for the
+// Next.js 16 soft-404 bug this flag works around.
 export const dynamicParams = false;
 
 const SITE_URL = "https://nameblooms.com";

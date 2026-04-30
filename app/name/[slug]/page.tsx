@@ -6,6 +6,9 @@ import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularN
 import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { analyzeName } from "@/lib/name-analysis";
+import { getNameFacts } from "@/lib/name-facts";
+import { generateCommentary } from "@/lib/name-commentary";
+import { LiveStats } from "@/components/upgrades/LiveStats";
 import { generateAutoFAQs } from "@/lib/auto-faqs";
 import { AdSlot } from "@/components/AdSlot";
 import { DataFeedback } from "@/components/DataFeedback";
@@ -25,6 +28,7 @@ import { TrustBlock } from "@/components/upgrades/TrustBlock";
 import { DecisionNext } from "@/components/upgrades/DecisionNext";
 import { RelatedEntities } from '@/components/upgrades/RelatedEntities';
 import { TableOfContents } from '@/components/upgrades/TableOfContents';
+import { getAllGuides } from "@/lib/guides";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -54,6 +58,14 @@ const trendLabels: Record<string, string> = {
   rising: "Trending Up", falling: "Less Common Now", stable: "Steady", classic: "Timeless Classic", vintage_revival: "Vintage Revival", new: "Rare & Unique",
 };
 
+// 2026-04-24 — MUST stay `false`. Next.js 16 App Router bug: with
+// `dynamicParams = true` + `notFound()` + SSG, the not-found response is
+// cached as a 200 prerender (x-nextjs-prerender: 1, x-nextjs-cache: HIT),
+// producing a soft-404 (HTTP 200 + "Not Found" body). Soft-404 = HCU killer.
+// `false` returns proper 404 status. Tradeoff: each invalid slug logs a
+// `NoFallbackError` (3 stderr lines). Mitigated by pm2-logrotate, not by
+// this flag. Verified 2026-04-24 with burst tests showing 200/prerender on
+// unseen slugs. DO NOT flip back without a middleware-level pre-filter.
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
@@ -108,6 +120,10 @@ export default async function NamePage({ params }: Props) {
   const popularity = getPopularity(slug);
   const similar = getSimilarNames(slug, n.gender, 12);
   const analysis = analyzeName(n.name, n.gender, n.origin, n.meaning, n.peak_year, n.peak_pct, popularity);
+  // Layer 1+2 (2026-04-28 AdSense low-value-content remediation): per-page
+  // unique data + fact-bound commentary. Replaces templated trend strings.
+  const facts = getNameFacts(slug);
+  const commentary = facts ? generateCommentary(n.name, facts) : null;
 
   const nameStats = getNameStats();
   const nameRank = getNameRank(slug);
@@ -175,7 +191,7 @@ export default async function NamePage({ params }: Props) {
             url: `https://en.wikipedia.org/wiki/${encodeURIComponent(n.name)}_(given_name)`,
           },
         ]}
-        updated="SSA data through 2023"
+        updated="SSA data through 2024"
       />
 
       <EditorNote note={`${n.name} is ${n.origin ? `a name of ${n.origin} origin` : 'a name'}${n.peak_year ? ` that peaked in popularity around ${n.peak_year}` : ''}. ${n.meaning ? `Its meaning, "${n.meaning}", reflects its cultural roots.` : 'Explore its trends and cultural background below.'}`} />
@@ -213,6 +229,10 @@ export default async function NamePage({ params }: Props) {
       </div>
 
       <InsightCards name={n} />
+
+      {/* Layer 1+2 — Live SSA snapshot with fact-bound commentary
+          (2026-04-28 AdSense low-value-content remediation). */}
+      {facts && commentary ? <LiveStats name={n.name} facts={facts} commentary={commentary} /> : null}
 
       {/* Data Insights */}
       {(() => {
@@ -411,9 +431,12 @@ export default async function NamePage({ params }: Props) {
             </div>
           ))}
         </div>
-        <a href={`/middle-names/${slug}/`} className="inline-block mt-3 px-4 py-2 rounded-lg border border-purple-200 text-purple-600 hover:bg-purple-50 text-sm">
-          Find middle names for {n.name} →
-        </a>
+        {/* 2026-04-28 — removed "Find middle names" CTA. /middle-names/* is
+            noindex+follow + sitemap-excluded + robots-disallowed since the
+            2026-04-26 AdSense scaled-content violation. The page still exists
+            for direct visitors; we just stop linking into the scaled-content
+            surface from indexable pages so the AdSense crawler / reviewer
+            doesn't traverse there. */}
       </section>
 
       <DidYouKnow fact={`In the United States, the Social Security Administration has recorded baby names since 1880. ${n.name.length <= 4 ? "Short names (4 letters or fewer) have been trending upward in recent decades." : "Longer names often carry rich etymological histories spanning multiple cultures."} There are over 100,000 unique baby names in the SSA database.`} />
@@ -484,16 +507,44 @@ export default async function NamePage({ params }: Props) {
         );
       })()}
 
-      {/* DecisionNext — 3 opinionated next steps */}
+      {/* Related Guides — evictionlawpeek HCU revival pattern 2026-04-24.
+          4 evergreen long-form guides as canonical internal-link destinations.
+          Reinforces topical authority (data-source, trends, science-of-naming)
+          adjacent to the name entity — not thin or scaled. */}
+      <section className="mt-10 mb-10">
+        <h2 className="text-lg font-bold text-slate-900 mb-4">Related Guides</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {getAllGuides().slice(0, 4).map((g) => (
+            <a key={g.slug} href={`/guide/${g.slug}/`}
+              className="block p-4 rounded-lg border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-200 transition-colors">
+              <div className="text-xs font-semibold text-purple-600 mb-1 uppercase tracking-wide">{g.category}</div>
+              <div className="text-sm font-bold text-slate-900 leading-snug mb-1">{g.title}</div>
+              <div className="text-xs text-slate-500 line-clamp-2">{g.description}</div>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* DecisionNext — 3 opinionated next steps.
+          2026-04-28: Removed middle-names card (was first slot). /middle-names/*
+          is robots-disallowed for AdSense crawlers, so linking from indexable
+          pages would route the reviewer into the scaled-content surface.
+          Replaced with by-decade card (only for top-100 names — that's the
+          subset with rich SSG'd by-decade pages) so DecisionNext still has
+          3 strong cards for the most-trafficked names. */}
       <DecisionNext
         cards={[
-          {
-            title: `Middle names for ${n.name}`,
-            blurb: `See curated middle-name pairings that match ${n.name}'s rhythm and style.`,
-            href: `/middle-names/${slug}/`,
-            cta: `Find middle names`,
-            tone: n.gender === 'boy' ? 'indigo' as const : 'amber' as const,
-          },
+          ...(isTop100ByDecade(slug)
+            ? [
+                {
+                  title: `${n.name}'s 15-decade arc`,
+                  blurb: `See ${n.name}'s full 1880s–2020s popularity trajectory with peer names that peaked in the same generation.`,
+                  href: `/name/${slug}/by-decade/`,
+                  cta: `Open decade view`,
+                  tone: n.gender === 'boy' ? 'indigo' as const : 'amber' as const,
+                },
+              ]
+            : []),
           ...((() => {
             const compareHref = similar.length > 0 ? getStaticComparisonHref(slug, similar[0].slug) : null;
             return compareHref
