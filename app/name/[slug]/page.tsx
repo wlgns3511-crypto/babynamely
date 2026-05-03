@@ -28,6 +28,12 @@ import { TrustBlock } from "@/components/upgrades/TrustBlock";
 import { DecisionNext } from "@/components/upgrades/DecisionNext";
 import { RelatedEntities } from '@/components/upgrades/RelatedEntities';
 import { TableOfContents } from '@/components/upgrades/TableOfContents';
+import { StateHeatmap } from '@/components/upgrades/StateHeatmap';
+import { getStateHeatmap } from '@/lib/state-heatmap';
+import { ArchetypeBadge } from '@/components/upgrades/ArchetypeBadge';
+import { getArchetypeForSlug, ARCHETYPES, countNamesByArchetype } from '@/lib/archetype';
+import { CohortFact } from '@/components/upgrades/CohortFact';
+import { getCohortFact } from '@/lib/cohort';
 import { getAllGuides } from "@/lib/guides";
 
 interface Props { params: Promise<{ slug: string }> }
@@ -124,6 +130,11 @@ export default async function NamePage({ params }: Props) {
   // unique data + fact-bound commentary. Replaces templated trend strings.
   const facts = getNameFacts(slug);
   const commentary = facts ? generateCommentary(n.name, facts) : null;
+  const stateHeatmap = getStateHeatmap(slug, n.gender);
+  const { archetype: archetypeSlug } = getArchetypeForSlug(slug);
+  const archetypeMeta = archetypeSlug ? ARCHETYPES[archetypeSlug] : null;
+  const archetypeTotal = archetypeSlug ? countNamesByArchetype(archetypeSlug) : 0;
+  const cohortFact = getCohortFact(slug);
 
   const nameStats = getNameStats();
   const nameRank = getNameRank(slug);
@@ -233,6 +244,25 @@ export default async function NamePage({ params }: Props) {
       {/* Layer 1+2 — Live SSA snapshot with fact-bound commentary
           (2026-04-28 AdSense low-value-content remediation). */}
       {facts && commentary ? <LiveStats name={n.name} facts={facts} commentary={commentary} /> : null}
+
+      {/* Phase A — SSA per-state heatmap (2026-05-03 thin-site escape).
+          Real per-state×year data from SSA SOOC namesbystate.zip. Each name
+          renders a unique top-states list + 51-cell intensity grid. */}
+      {stateHeatmap && <StateHeatmap name={n.name} gender={n.gender} data={stateHeatmap} />}
+
+      {/* Phase B — Trajectory archetype (2026-05-03). Pure derivation from the
+          popularity series; one of 8 archetypes per name. */}
+      {archetypeMeta && (
+        <ArchetypeBadge
+          name={n.name}
+          meta={archetypeMeta}
+          totalInArchetype={archetypeTotal}
+        />
+      )}
+
+      {/* Phase C — Cohort fact (2026-05-03). Pure derivation from popularity ×
+          year_totals: first sustained year + dominant generation cohort. */}
+      {cohortFact && <CohortFact name={n.name} fact={cohortFact} />}
 
       {/* Data Insights */}
       {(() => {

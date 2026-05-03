@@ -161,11 +161,19 @@ for (const n of top100ByDecade) {
   add({ url: `${SITE_URL}/name/${n.slug}/by-decade/`, priority: '0.75', changefreq: 'monthly' });
 }
 
+// Trajectory archetype hubs — Phase B 2026-05-03 (8 archetypes + 1 index = 9 URLs)
+add({ url: `${SITE_URL}/trajectory/`, priority: '0.85', changefreq: 'monthly' });
+const ARCHETYPES_FOR_SITEMAP = ['modern', 'vintage', 'classic', 'burst', 'climber', 'ancient', 'fading', 'steady'];
+for (const a of ARCHETYPES_FOR_SITEMAP) {
+  add({ url: `${SITE_URL}/trajectory/${a}/`, priority: '0.8', changefreq: 'monthly' });
+}
+
 // ─── Cardinality guard ────────────────────────────────────────────────────
 // 2026-04-24: budget raised 8.5K → 15K after middle-names revival.
 // 2026-04-26: budget restored 15K → 8.5K after middle-names re-drop
 //             (AdSense policy violation triggered re-evaluation).
-// /name/ (6,782) + hubs/guides/blog/state/origin/year (~500) ≈ 7.3K.
+// 2026-05-03: +9 trajectory hubs (Phase B). Budget unchanged 8.5K (slack ample).
+// /name/ (6,782) + hubs/guides/blog/state/origin/year (~500) + trajectory (9) ≈ 7.3K.
 // If this trips, suspect /middle-names/ (6,782) or /es/name/ (6,782) accidentally re-added.
 if (entries.length > 8500 && !process.env.SITEMAP_LARGE_OK) {
   throw new Error(
