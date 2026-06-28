@@ -4,7 +4,7 @@
  * Usage:
  *   <DataSourceBadge sources={[{ name: "US Census", url: "..." }]} />
  *   <DataSourceBadge sources={[...]} updatedAt="2026-04" />
- *   <DataSourceBadge sources={[...]} updatedAt="2026-04" verifiedLabel="Data verified" />
+ *   <DataSourceBadge sources={[...]} updatedAt="2026-04" verifiedLabel="Sourced data" />
  */
 
 const CheckIcon = () => (
@@ -28,11 +28,11 @@ interface DataSourceBadgeProps {
   sources: { name: string; url: string }[];
   /** e.g. "2026-04" or "April 2026" — defaults to build month */
   updatedAt?: string;
-  /** Label before date — defaults to "Data verified" */
+  /** Label before date — defaults to "Sourced data" */
   verifiedLabel?: string;
 }
 
-export function DataSourceBadge({ sources, updatedAt, verifiedLabel = 'Data verified' }: DataSourceBadgeProps) {
+export function DataSourceBadge({ sources, updatedAt, verifiedLabel = 'Sourced data' }: DataSourceBadgeProps) {
   const dateStr = updatedAt || getBuildDate();
 
   return (

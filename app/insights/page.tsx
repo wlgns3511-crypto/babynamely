@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllInsightArticles } from '@/lib/insight-articles';
+import { AuthorBox } from '@/components/AuthorBox';
 
 const SITE_URL = 'https://nameblooms.com';
 
@@ -77,6 +78,8 @@ export default function InsightsIndex() {
           </li>
         </ul>
       </section>
+
+      <AuthorBox />
     </div>
   );
 }

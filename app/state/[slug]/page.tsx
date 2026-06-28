@@ -3,14 +3,18 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAllStates, getStateBySlug } from '@/lib/states-data';
 import { getStateInsight } from '@/lib/state-insights';
-import { breadcrumbSchema } from '@/lib/schema';
+import { breadcrumbSchema, stateDatasetSchema } from '@/lib/schema';
+import { getStateBackedRowCount } from '@/lib/state-heatmap';
 import { StateRich } from '@/components/state/StateRich';
+import { AuthorBox } from '@/components/AuthorBox';
+import { StateHeroImage } from '@/components/StateHeroImage';
+import { getStateImageByName } from '@/lib/state-images';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export const dynamicParams = true;
+export const dynamicParams = false;
 export const revalidate = 86400;
 
 const SITE_URL = 'https://nameblooms.com';
@@ -57,9 +61,12 @@ export default async function StatePage({ params }: Props) {
     modern: 'Modern-leaning',
   };
 
+  const backedRowCount = getStateBackedRowCount(state.code);
+
   return (
     <article className="max-w-4xl mx-auto">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(crumbs)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(stateDatasetSchema({ stateName: state.name, stateSlug: slug, backedRowCount })) }} />
 
       <nav className="text-sm text-slate-500 mb-6">
         <Link href="/" className="hover:text-pink-700">Home</Link>
@@ -70,6 +77,8 @@ export default async function StatePage({ params }: Props) {
       </nav>
 
       <header className="mb-8">
+      {(() => { const stateImage = getStateImageByName(state.name); return stateImage ? <StateHeroImage img={stateImage} /> : null; })()}
+
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Popular Baby Names in {state.name}</h1>
         <p className="text-slate-600">
           The most popular boy and girl baby names in {state.name} ({state.code}), along with local naming trends and the cultural influences that shape how parents in {state.name} choose names.
@@ -232,6 +241,42 @@ export default async function StatePage({ params }: Props) {
         </section>
       </div>
 
+      <section
+        data-upgrade="state-interpretation"
+        aria-label={`How to read ${state.name} naming data`}
+        className="mb-10 rounded-xl border border-slate-200 bg-white p-5"
+      >
+        <div className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+          How to read this state's data
+        </div>
+        <div className="space-y-4 text-sm leading-relaxed text-slate-700">
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">What the {state.name} top-10 actually tells you</h3>
+            <p>
+              The list above is computed from SSA state-file <code>state_name_total</code> rows ({backedRowCount.toLocaleString()} (name, year) records for {state.code}). It reflects the cumulative count over the available state series, not just the latest year. A name in the top 10 here does not necessarily mean it&rsquo;s the most popular <em>this year</em> — only that it has accumulated the most births given to {state.code} babies across the dataset.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">Common misreadings</h3>
+            <p>
+              The most common misreading is treating a state-level rank as a national signal. A name can be #3 in {state.name} and outside the national top-50 — that&rsquo;s precisely the &ldquo;distinctive picks&rdquo; phenomenon highlighted in the snapshot above. State-level naming reflects local demographics, ethnic communities, and regional cultural anchors, not a softer copy of the national list.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">What our SSA-derived view does <em>not</em> capture</h3>
+            <p>
+              SSA state files exclude any name given to fewer than 5 babies in a given year (privacy threshold). For names with strong ethnic-community concentration in pockets of {state.name}, the actual community-level use can be materially higher than the file shows. We also do not capture middle-name use, name spellings as separate entries (each spelling is its own row), or non-US-citizen births that may follow different naming patterns.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">Practical example</h3>
+            <p>
+              If you are choosing a baby name in {state.name} and want to predict your child&rsquo;s classroom-name overlap, the cumulative top 10 here is a better anchor than the latest-year top 10 — naming preferences in your child&rsquo;s peer cohort are mostly set by parents who chose names 0–4 years ago, not in the single year of birth. Cross-reference with the &ldquo;by decade&rdquo; deep-dive linked above for finer time slicing.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="mb-10">
         <h2 className="text-2xl font-bold text-slate-900 mb-4">Naming Trends in {state.name}</h2>
         <ul className="space-y-2">
@@ -264,7 +309,7 @@ export default async function StatePage({ params }: Props) {
           cultural trends, migration patterns, and demographic changes influence naming choices in {state.code}.
         </p>
         <p className="text-sm text-slate-500 mt-2">
-          <a href="/guide/ssa-baby-name-data/" className="text-purple-700 hover:underline">Learn more about how SSA baby name data works</a>
+          Learn more about how SSA baby name data works
         </p>
       </section>
 
@@ -290,6 +335,8 @@ export default async function StatePage({ params }: Props) {
       )}
 
       <StateRich slug={slug} state={state} />
+
+      <AuthorBox source={`U.S. SSA state-level baby-name file (~1910–2024) · ${state.name}`} />
     </article>
   );
 }

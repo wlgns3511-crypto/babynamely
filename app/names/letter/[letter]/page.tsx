@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getNamesByLetter } from "@/lib/db";
 import { getLetterInsight } from "@/lib/cluster-insights";
+import { AuthorBox } from "@/components/AuthorBox";
 
 interface Props { params: Promise<{ letter: string }> }
 
@@ -108,6 +109,28 @@ export default async function LetterPage({ params }: Props) {
         </section>
       )}
 
+      <section
+        data-upgrade="letter-explainer"
+        aria-label={`How to read the letter-${L} list`}
+        className="my-8 rounded-xl border border-slate-200 bg-white p-5"
+      >
+        <h2 className="text-lg font-bold text-slate-900 mb-3">How to read the letter-{L} list</h2>
+        <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+          <p>
+            We list every name in our SSA-derived archive that begins with {L} ({insight.count.toLocaleString()} names: {insight.countBoy.toLocaleString()} boy + {insight.countGirl.toLocaleString()} girl). Letter is a low-information slicer — it groups names by initial, not by sound, etymology, or popularity era. This is most useful for &ldquo;same-initial sibling sets&rdquo; or for parents constrained by a family-tradition initial.
+          </p>
+          <p>
+            <strong>What the &ldquo;modal peak decade&rdquo; tells you:</strong> {insight.modalPeakDecade ? `The most common decade for letter-${L} names to peak is the ${insight.modalPeakDecade}s.` : 'No clear modal decade.'} If a single decade dominates, the letter has a generational tilt — names starting with K skew Millennial, J skews multi-gen, and so on. Use this to anticipate &ldquo;sounds-modern&rdquo; vs &ldquo;sounds-vintage&rdquo; perception when scanning the list.
+          </p>
+          <p>
+            <strong>What this view does <em>not</em> capture:</strong> sound similarity (&ldquo;Catherine&rdquo; / &ldquo;Kate&rdquo; live under C and K), spelling variants (&ldquo;Caitlin&rdquo; / &ldquo;Kaitlyn&rdquo; / &ldquo;Caitlyn&rdquo;), and names with non-Latin scripts romanized differently. We also do not capture diminutives unless they appear in the SSA file as their own name — &ldquo;Maddie&rdquo; under M is not the same record as &ldquo;Madeline.&rdquo;
+          </p>
+          <p>
+            <strong>Practical use:</strong> if you&rsquo;re screening for a sibling-name match, scan all-time top {L}-names first (above), then click into 5–10 candidates and check the Cross-Generation Cohort Index on each — sibling sets that share a letter and a cohort feel coherent; sharing a letter but spanning Boomer-to-Alpha cohorts feels mismatched.
+          </p>
+        </div>
+      </section>
+
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
         {names.map((n) => (
           <a key={n.slug} href={`/name/${n.slug}/`} className="p-2 hover:bg-slate-50 rounded border border-slate-100">
@@ -116,6 +139,8 @@ export default async function LetterPage({ params }: Props) {
           </a>
         ))}
       </div>
+
+      <AuthorBox source={`U.S. SSA national series (1880–2024) · names beginning with ${L}`} />
     </div>
   );
 }

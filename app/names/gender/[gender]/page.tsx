@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPopularNames } from "@/lib/db";
 import { getGenderInsight } from "@/lib/cluster-insights";
+import { AuthorBox } from "@/components/AuthorBox";
 
 interface Props { params: Promise<{ gender: string }> }
 
@@ -101,6 +102,28 @@ export default async function GenderPage({ params }: Props) {
         </section>
       )}
 
+      <section
+        data-upgrade="gender-explainer"
+        aria-label={`How to read the ${label.toLowerCase()}-names list`}
+        className="my-8 rounded-xl border border-slate-200 bg-white p-5"
+      >
+        <h2 className="text-lg font-bold text-slate-900 mb-3">How to read this {label.toLowerCase()}-names list</h2>
+        <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+          <p>
+            The {names.length.toLocaleString()} names below are pulled from the SSA national series 1880–2024 and ordered by all-time popularity (peak share-of-births × sustained-year count). This is not a &ldquo;most popular today&rdquo; list — it surfaces names with material historical use, so the top of the list mixes current top-100 names with multi-generation staples (e.g., Mary, John) whose current rank is much lower.
+          </p>
+          <p>
+            <strong>Top-{Math.round(insight.top10Share2024 * 1000) / 10}% concentration tells you about peer-overlap risk.</strong> The 2024 top-10 share is {(insight.top10Share2024 * 100).toFixed(1)}% of {label.toLowerCase()} births. That means roughly {Math.round(insight.top10Share2024 * 100)} out of every 1,000 {label.toLowerCase()} babies born in 2024 received one of the top 10 names — a fairly concentrated head, but not winner-take-all. The long-tail share ({(insight.longTailShare2024 * 100).toFixed(1)}%) is the share of births given names outside the top 100, which is the parents-want-uncommon pool. Higher long-tail share = parents are seeking distinction.
+          </p>
+          <p>
+            <strong>What this view does not capture:</strong> spelling variants count separately (e.g., Aiden / Ayden / Aidan are 3 rows), gender-neutral names appear under both gender slices, and the SSA file omits names given to fewer than 5 babies in a year (privacy threshold). For very rare names, our list shows only the years where the threshold was met.
+          </p>
+          <p>
+            <strong>Practical use:</strong> if you want a {label.toLowerCase()} name with strong historical anchor and uncommon current use, scan the upper portion of this list and click through to per-name pages — there you&rsquo;ll see the Cross-Generation Cohort Index, which separates &ldquo;multi-gen staple sliding into rarity&rdquo; from &ldquo;single-gen spike that has fully faded.&rdquo; They feel different to modern parents.
+          </p>
+        </div>
+      </section>
+
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
         {names.map((n) => (
           <a key={n.slug} href={`/name/${n.slug}/`} className="p-2 hover:bg-slate-50 rounded border border-slate-100">
@@ -109,6 +132,8 @@ export default async function GenderPage({ params }: Props) {
           </a>
         ))}
       </div>
+
+      <AuthorBox source={`U.S. SSA national series (1880–2024) · ${label.toLowerCase()} names`} />
     </div>
   );
 }

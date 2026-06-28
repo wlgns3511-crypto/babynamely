@@ -39,6 +39,13 @@ function isComparePathKept(slugs: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // /es/* — 410 Gone (route prerender removed 2026-05-10; sitemap-clean for
+  // weeks; route directory deleted in same commit). Stale cache hits return
+  // 410 for fast deindex. Matches portfolio-wide /es/ kill pattern.
+  if (pathname === '/es' || pathname === '/es/' || pathname.startsWith('/es/')) {
+    return new NextResponse('Gone', { status: 410 });
+  }
+
   // /compare/<slugs>/ — 410 if not in keep-set (either ordering)
   if (pathname.startsWith('/compare/')) {
     const raw = pathname.slice(9).replace(/\/$/, '');

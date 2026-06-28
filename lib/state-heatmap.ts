@@ -62,6 +62,18 @@ export function stateName(code: string): string {
   return STATE_NAMES[code] ?? code;
 }
 
+/**
+ * Count rows in state_name_total for a given state code.
+ * Surfaced as `backedRowCount` in stateDatasetSchema for AdSense reviewers
+ * — verifies the per-state page is data-backed (not templated boilerplate).
+ */
+export function getStateBackedRowCount(stateCode: string): number {
+  const row = getDb()
+    .prepare('SELECT COUNT(*) AS c FROM state_name_total WHERE state = ?')
+    .get(stateCode.toUpperCase()) as { c: number } | undefined;
+  return row?.c ?? 0;
+}
+
 export function getNameStateRows(slug: string, gender: string): StateRow[] {
   return getDb()
     .prepare(

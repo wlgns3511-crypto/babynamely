@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthorBox } from "@/components/AuthorBox";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -11,7 +12,7 @@ export default function PrivacyPage() {
   return (
     <article className="prose prose-slate max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold text-purple-700 mb-6">Privacy Policy</h1>
-      <p className="text-sm text-slate-500 mb-8">Last updated: March 25, 2026</p>
+      <p className="text-sm text-slate-500 mb-8">Last updated: April 1, 2026</p>
 
       <p>
         NameBlooms (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates the website nameblooms.com. This
@@ -97,6 +98,8 @@ export default function PrivacyPage() {
         </a>{" "}
         for network-wide privacy information.
       </p>
+
+      <AuthorBox />
     </article>
   );
 }

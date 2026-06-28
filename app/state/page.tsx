@@ -88,7 +88,7 @@ export default function StatesIndex() {
           show less variety in their public data as a result.
         </p>
         <p className="text-sm text-slate-500 mt-2">
-          <a href="/guide/ssa-baby-name-data/" className="text-purple-700 hover:underline">Learn more about SSA data methodology</a>
+          Learn more about SSA data methodology
         </p>
       </section>
     </div>

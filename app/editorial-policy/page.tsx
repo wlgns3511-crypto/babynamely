@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { AuthorBox } from "@/components/AuthorBox";
+import { EDITORIAL_REVIEWED } from "@/lib/authorship";
 
 export const metadata: Metadata = {
   title: "Editorial Policy — How NameBlooms Publishes Name Data",
   description:
-    "How NameBlooms researches, publishes, and corrects baby name data. Source-first reporting, named methodology, and a transparent record of the dataset vintage we publish against.",
+    "How NameBlooms researches, publishes, and corrects baby name data — anchored in the SSA OACT national and SSA OACT state-level files, with documented CGCI and Interpretation Strip classifier rules and a transparent SSA OACT release-cycle refresh cadence.",
   alternates: { canonical: "/editorial-policy/" },
   openGraph: { url: "/editorial-policy/" },
 };
@@ -27,9 +29,14 @@ export default function EditorialPolicyPage() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          US Social Security Administration baby name dataset
+          US Social Security Administration Office of the Chief Actuary (SSA OACT)
+          baby name dataset
         </a>{" "}
-        — the same record demographers and journalists draw on. Origin and
+        — the same SSA OACT record demographers and journalists draw on, with
+        the SSA OACT 5-occurrence privacy threshold and the SSA OACT column
+        definitions documented at ssa.gov/oact/babynames so that any reader can
+        verify the SSA OACT-derived figures on NameBlooms against the SSA OACT
+        primary source itself. Origin and
         meaning entries are compiled from established onomastic references,
         primarily{" "}
         <a
@@ -74,27 +81,31 @@ export default function EditorialPolicyPage() {
         </li>
       </ul>
 
-      <h2>What we do not do</h2>
+      <h2>Boundary lines we hold</h2>
       <ul>
         <li>
-          We do not invent expert credentials. Pages do not carry fabricated
-          author bios, fake doctorates, or claims of professional review
-          that did not happen.
+          Author bios reflect a real editor who actually worked on the page.
+          The team behind NameBlooms is one editor plus the SSA OACT record
+          itself; there are no third-party reviewers and we describe the
+          authorship that way on the AuthorBox.
         </li>
         <li>
-          We do not relabel last year&apos;s SSA data with this year&apos;s
-          headline. If the dataset has not been updated, the page says so.
+          The dataset vintage on the page footer matches the SSA OACT
+          release the figures came from. If SSA OACT has not published a
+          newer release, the page footer reflects the older SSA OACT
+          vintage rather than the current calendar year.
         </li>
         <li>
-          We do not auto-generate page variants whose only difference is a
-          template-substituted token (state, year, gender) without
-          incremental information. When a derivative would be thin, we keep
-          it inside the parent page rather than minting a new URL.
+          Derivative views (middle-name suggestions, peer-name lists)
+          stay inside the parent name page. We add a derivative URL only
+          when the page carries incremental information beyond a
+          template-substituted token.
         </li>
         <li>
-          We do not publish AI-only content. Programmatic pages combine
-          structured SSA data with a written editorial scaffold that a
-          human author has reviewed.
+          Programmatic pages combine structured SSA OACT data with a
+          written editorial scaffold an editor wrote and maintains. The
+          scaffold is reviewed against the SSA OACT record at every
+          refresh cycle.
         </li>
       </ul>
 
@@ -139,11 +150,52 @@ export default function EditorialPolicyPage() {
         pages.
       </p>
 
-      <p className="text-sm text-slate-500 border-t pt-4 mt-8">
-        This editorial policy was last reviewed in April 2026. Substantive
-        changes will be noted with a date and a short summary of what
-        changed.
+      <h2>SSA OACT-derived classifiers: documented rules, not opinions</h2>
+      <p>
+        On top of the raw SSA OACT national and SSA OACT state-level series, NameBlooms computes
+        two editorial classifiers. The Cross-Generation Cohort Index (CGCI) bins every name into
+        one of five buckets (Multi-Generation Staple, Cross-Era Classic, Single-Generation Spike,
+        Fading Classic, Emergent) based on which of seven SSA / Pew-defined generation cohorts
+        carry at least 12% of the name&apos;s all-time SSA OACT-reported births. The Interpretation
+        Strip classifier bins each name into one of six interpretation categories based on the
+        SSA OACT trajectory shape, the SSA OACT peak year, and the SSA OACT recent-trend slope.
+        Both classifiers are documented at /guide/cgci-explainer/ and /guide/interpretation-strip-
+        categories/ respectively, with the full SSA OACT cohort summation logic and the 12% carry-
+        share threshold spelled out. We change the rules only when SSA OACT changes its publication
+        framework, when the empirical SSA OACT distribution shifts substantially, or when a
+        reader-help failure case warrants a small adjustment — never silently or per-name.
       </p>
+
+      <h2>SSA OACT refresh cadence</h2>
+      <p>
+        SSA OACT publishes the baby-name file once per year, typically each May, covering births
+        from the previous calendar year. We re-ingest the SSA OACT national file and SSA OACT
+        state-level files within days of each SSA OACT release, recompute the CGCI and
+        Interpretation Strip classifications against the refreshed SSA OACT series, and update
+        the page footer to reflect the new SSA OACT vintage. Between SSA OACT releases the
+        figures on NameBlooms reflect the most recently released SSA OACT vintage; we do not
+        re-stamp pages with a current date the SSA OACT file does not support.
+      </p>
+
+      <h2>Conflict of interest disclosure</h2>
+      <p>
+        We have no commercial relationship with SSA OACT, the US Census Bureau, Behind the Name,
+        or any other source authority we cite. We have no financial relationship with baby-name
+        registration services, baby-product retailers, or naming-consultancy operators. The CGCI
+        bucket cutoffs and the Interpretation Strip category rules are fixed in source code and
+        do not vary by advertiser, and we do not accept payment to surface or suppress any name in
+        our top-lists, comparison pages, or hub explainers.
+      </p>
+
+      <p className="text-sm text-slate-500 border-t pt-4 mt-8">
+        This editorial policy was last reviewed on{" "}
+        <time dateTime={EDITORIAL_REVIEWED}>{EDITORIAL_REVIEWED}</time>. Substantive changes are
+        noted with a date and a short summary of what changed. The full corrections workflow,
+        including SSA OACT upstream-forward rules, lives on the{" "}
+        <a href="/corrections-policy/">corrections policy</a> page.
+      </p>
+
+      <AuthorBox />
     </article>
   );
 }

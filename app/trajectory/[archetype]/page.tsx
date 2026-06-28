@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ARCHETYPES, ARCHETYPE_LIST, getNamesByArchetype, countNamesByArchetype, type ArchetypeSlug } from '@/lib/archetype';
-import { breadcrumbSchema } from '@/lib/schema';
+import { breadcrumbSchema, trajectoryDatasetSchema } from '@/lib/schema';
+import { ANALYSIS_VINTAGE } from '@/lib/authorship';
+import { AuthorBox } from '@/components/AuthorBox';
 
 interface Props { params: Promise<{ archetype: string }> }
 
@@ -84,6 +86,42 @@ export default async function TrajectoryPage({ params }: Props) {
           </div>
         </div>
       </header>
+
+      <section
+        data-upgrade="trajectory-interpretation"
+        aria-label={`How to read the ${meta.label} archetype`}
+        className="mb-8 rounded-xl border border-slate-200 bg-white p-5"
+      >
+        <div className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+          How to read this archetype
+        </div>
+        <div className="space-y-4 text-sm leading-relaxed text-slate-700">
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">What &ldquo;{meta.label}&rdquo; actually means here</h3>
+            <p>
+              This page lists names whose annual share-of-births curve matches the {meta.label} pattern after applying our 8-rule classifier. Curve features are derived from real SSA data ({total.toLocaleString()} names total in this archetype). The label is descriptive of the curve shape, not prescriptive of the parents who chose the name — many factors drive a name into this archetype, including media triggers, cohort taste, and migration.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">Common misreadings</h3>
+            <p>
+              The most common misreading is treating archetype membership as a forecast. A {meta.label}-class name today does not necessarily stay in this class next year — names migrate between archetypes as their curves evolve. The classification reflects the curve as of the {`${ANALYSIS_VINTAGE}`} vintage; check the timeline on each per-name page for the latest trajectory.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">What this view does <em>not</em> capture</h3>
+            <p>
+              We compute archetypes from the national SSA series only. Names with strong regional concentration may show a different curve in their primary state than nationally; the archetype here reflects the national aggregate. We also do not split spelling variants — &ldquo;Sara&rdquo; and &ldquo;Sarah&rdquo; are separate rows in our archive and may land in different archetypes.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-1">Practical example</h3>
+            <p>
+              If you arrived here researching a name candidate, the most useful follow-up is to click through to the per-name page and check (a) where the curve sits relative to peers in this archetype, and (b) the Cross-Generation Cohort Index — two names in the same archetype can have very different cohort distributions, which matters for &ldquo;sounds like grandparent vs sounds like peer&rdquo; perception.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-bold mb-3">How we classify the {meta.label} archetype</h2>
@@ -184,6 +222,20 @@ export default async function TrajectoryPage({ params }: Props) {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            trajectoryDatasetSchema({
+              archetype: meta.slug,
+              archetypeLabel: meta.label,
+              backedRowCount: total,
+            }),
+          ),
+        }}
+      />
+
+      <AuthorBox source={`U.S. SSA national series (1880–2024) classified by curve-shape archetype · ${meta.label}`} />
     </div>
   );
 }

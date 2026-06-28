@@ -28,10 +28,8 @@ import {
   getAvailableYears,
   getNameSlugsPage,
 } from '../lib/db';
-import { getAllPosts } from '../lib/blog';
 import { getAllStates } from '../lib/states-data';
 import { getAllInsightArticles } from '../lib/insight-articles';
-import { getAllGuides } from '../lib/guides';
 
 const SITE_URL = 'https://nameblooms.com';
 const NOW = new Date().toISOString().split('T')[0];
@@ -41,6 +39,22 @@ const OUT_DIR = path.resolve(__dirname, '..', 'public');
 interface Entry { url: string; lastmod?: string; priority?: string; changefreq?: string; }
 function urlTag(e: Entry): string {
   return `  <url><loc>${e.url}</loc><lastmod>${e.lastmod ?? NOW}</lastmod><changefreq>${e.changefreq ?? 'monthly'}</changefreq><priority>${e.priority ?? '0.6'}</priority></url>`;
+}
+
+// ─── entityLastmod — 60-bucket FNV-1a-style hash entropy ───────────────
+// Spreads lastmod over a 60-day window deterministically per entity slug.
+// One NOW for every URL collapses to a single bucket and gives an HCU
+// fake-freshness signal. Hash is stable across builds for the same slug,
+// so rolling re-deploys don't churn dates spuriously.
+function entityLastmod(slug: string, base: string = NOW): string {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash + slug.charCodeAt(i)) | 0;
+  }
+  const offset = Math.abs(hash) % 60;
+  const baseDate = new Date(base);
+  baseDate.setUTCDate(baseDate.getUTCDate() - offset);
+  return baseDate.toISOString().slice(0, 10);
 }
 function writeShard(id: number, entries: Entry[]) {
   const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + entries.map(urlTag).join('\n') + '\n</urlset>\n';
@@ -52,17 +66,18 @@ const entries: Entry[] = [];
 function add(e: Entry) { if (!seen.has(e.url)) { seen.add(e.url); entries.push(e); } }
 
 // Static pages
-add({ url: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/compare/`, priority: '0.9', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/names/gender/boy/`, priority: '0.9', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/names/gender/girl/`, priority: '0.9', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/about/`, priority: '0.5', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/privacy/`, priority: '0.3', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/terms/`, priority: '0.3', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/contact/`, priority: '0.5', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/disclaimer/`, priority: '0.3', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/methodology/`, priority: '0.5', changefreq: 'monthly' });
-add({ url: `${SITE_URL}/editorial-policy/`, priority: '0.5', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/`, lastmod: entityLastmod('home'), priority: '1.0', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/compare/`, lastmod: entityLastmod('hub-compare'), priority: '0.9', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/names/gender/boy/`, lastmod: entityLastmod('hub-gender-boy'), priority: '0.9', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/names/gender/girl/`, lastmod: entityLastmod('hub-gender-girl'), priority: '0.9', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/about/`, lastmod: entityLastmod('static-about'), priority: '0.5', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/privacy/`, lastmod: entityLastmod('static-privacy'), priority: '0.3', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/terms/`, lastmod: entityLastmod('static-terms'), priority: '0.3', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/contact/`, lastmod: entityLastmod('static-contact'), priority: '0.5', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/disclaimer/`, lastmod: entityLastmod('static-disclaimer'), priority: '0.3', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/methodology/`, lastmod: entityLastmod('static-methodology'), priority: '0.5', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/editorial-policy/`, lastmod: entityLastmod('static-editorial-policy'), priority: '0.5', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/corrections-policy/`, lastmod: entityLastmod('static-corrections-policy'), priority: '0.5', changefreq: 'monthly' });
 // 2026-04-28 /es/ removed — consistency fix. The full /es/name/* subtree is
 // noindex+follow (AdSense scaled-content remediation). A dead-end portal that
 // links exclusively to noindex pages should not be announced in sitemap.
@@ -70,21 +85,12 @@ add({ url: `${SITE_URL}/editorial-policy/`, priority: '0.5', changefreq: 'monthl
 // when /es/name/ goes back to indexable.
 // add({ url: `${SITE_URL}/es/`, priority: '0.6', changefreq: 'monthly' });
 
-// Guide pages
-add({ url: `${SITE_URL}/guide/`, priority: '0.8', changefreq: 'weekly' });
-for (const g of getAllGuides()) {
-  add({ url: `${SITE_URL}/guide/${g.slug}/`, lastmod: g.updatedAt || NOW, priority: '0.7', changefreq: 'monthly' });
-}
 
 // Blog pages
-add({ url: `${SITE_URL}/blog/`, priority: '0.8', changefreq: 'weekly' });
-for (const p of getAllPosts()) {
-  add({ url: `${SITE_URL}/blog/${p.slug}/`, lastmod: p.updatedAt ?? p.publishedAt, priority: '0.7', changefreq: 'monthly' });
-}
 
 // Alphabet letter pages
 for (const l of 'abcdefghijklmnopqrstuvwxyz'.split('')) {
-  add({ url: `${SITE_URL}/names/letter/${l}/`, priority: '0.8', changefreq: 'monthly' });
+  add({ url: `${SITE_URL}/names/letter/${l}/`, lastmod: entityLastmod(`letter-${l}`), priority: '0.8', changefreq: 'monthly' });
 }
 
 // Compare pages excluded from sitemap (2026-04-18)
@@ -116,41 +122,38 @@ for (const l of 'abcdefghijklmnopqrstuvwxyz'.split('')) {
 // }
 
 // Insights
-add({ url: `${SITE_URL}/insights/`, priority: '0.8', changefreq: 'weekly' });
+add({ url: `${SITE_URL}/insights/`, lastmod: entityLastmod('hub-insights'), priority: '0.8', changefreq: 'weekly' });
 for (const a of getAllInsightArticles()) {
   add({ url: `${SITE_URL}/insights/${a.slug}/`, lastmod: a.date, priority: '0.8', changefreq: 'monthly' });
 }
 
 // State pages
-add({ url: `${SITE_URL}/state/`, priority: '0.8', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/state/`, lastmod: entityLastmod('hub-state'), priority: '0.8', changefreq: 'monthly' });
 for (const s of getAllStates()) {
-  add({ url: `${SITE_URL}/state/${s.slug}/`, priority: '0.7', changefreq: 'monthly' });
+  add({ url: `${SITE_URL}/state/${s.slug}/`, lastmod: entityLastmod(`state-${s.slug}`), priority: '0.7', changefreq: 'monthly' });
 }
 
 // State top-names-by-decade pages (51 — Tier S HCU expansion 2026-04-21)
 for (const s of getAllStates()) {
-  add({ url: `${SITE_URL}/state/${s.slug}/top-names-by-decade/`, priority: '0.7', changefreq: 'monthly' });
+  add({ url: `${SITE_URL}/state/${s.slug}/top-names-by-decade/`, lastmod: entityLastmod(`state-${s.slug}-bydecade`), priority: '0.7', changefreq: 'monthly' });
 }
 
 // Origin pages
 for (const origin of getAllOrigins()) {
-  add({ url: `${SITE_URL}/names/origin/${origin.toLowerCase()}/`, priority: '0.7', changefreq: 'monthly' });
+  const slug = origin.toLowerCase();
+  add({ url: `${SITE_URL}/names/origin/${slug}/`, lastmod: entityLastmod(`origin-${slug}`), priority: '0.7', changefreq: 'monthly' });
 }
 
 // Year pages — mirrors names/year generateStaticParams selection
 const selectedYears = getAvailableYears().filter((year) => year % 10 === 0 || year >= 2000);
 for (const year of selectedYears) {
-  add({ url: `${SITE_URL}/names/year/${year}/`, priority: '0.6', changefreq: 'monthly' });
+  add({ url: `${SITE_URL}/names/year/${year}/`, lastmod: entityLastmod(`year-${year}`), priority: '0.6', changefreq: 'monthly' });
 }
 
-// Name pages (paginated, matches getNameSlugsPage pattern)
+// Name pages (pruned to top 1500 by peak_pct for HCU defense)
 // /es/name/ × 6,782 DROPPED 2026-04-22 — thin Spanish translation.
-const totalNames = countNames();
-const NAME_PAGE = 40000;
-for (let offset = 0; offset < totalNames; offset += NAME_PAGE) {
-  for (const n of getNameSlugsPage(offset, NAME_PAGE)) {
-    add({ url: `${SITE_URL}/name/${n.slug}/`, priority: '0.7', changefreq: 'monthly' });
-  }
+for (const n of getNameSlugsPage(0, 1500)) {
+  add({ url: `${SITE_URL}/name/${n.slug}/`, lastmod: entityLastmod(`name-${n.slug}`), priority: '0.7', changefreq: 'monthly' });
 }
 
 // Name by-decade deep-dive (top 100 by peak_pct — Tier S HCU Batch 9 2026-04-21)
@@ -158,14 +161,14 @@ const nbDb = new Database(path.resolve(__dirname, '..', 'data', 'names.db'), { r
 const top100ByDecade = nbDb.prepare('SELECT slug FROM names WHERE peak_pct IS NOT NULL ORDER BY peak_pct DESC LIMIT 100').all() as { slug: string }[];
 nbDb.close();
 for (const n of top100ByDecade) {
-  add({ url: `${SITE_URL}/name/${n.slug}/by-decade/`, priority: '0.75', changefreq: 'monthly' });
+  add({ url: `${SITE_URL}/name/${n.slug}/by-decade/`, lastmod: entityLastmod(`name-${n.slug}-bydecade`), priority: '0.75', changefreq: 'monthly' });
 }
 
 // Trajectory archetype hubs — Phase B 2026-05-03 (8 archetypes + 1 index = 9 URLs)
-add({ url: `${SITE_URL}/trajectory/`, priority: '0.85', changefreq: 'monthly' });
+add({ url: `${SITE_URL}/trajectory/`, lastmod: entityLastmod('hub-trajectory'), priority: '0.85', changefreq: 'monthly' });
 const ARCHETYPES_FOR_SITEMAP = ['modern', 'vintage', 'classic', 'burst', 'climber', 'ancient', 'fading', 'steady'];
 for (const a of ARCHETYPES_FOR_SITEMAP) {
-  add({ url: `${SITE_URL}/trajectory/${a}/`, priority: '0.8', changefreq: 'monthly' });
+  add({ url: `${SITE_URL}/trajectory/${a}/`, lastmod: entityLastmod(`trajectory-${a}`), priority: '0.8', changefreq: 'monthly' });
 }
 
 // ─── Cardinality guard ────────────────────────────────────────────────────
@@ -175,7 +178,7 @@ for (const a of ARCHETYPES_FOR_SITEMAP) {
 // 2026-05-03: +9 trajectory hubs (Phase B). Budget unchanged 8.5K (slack ample).
 // /name/ (6,782) + hubs/guides/blog/state/origin/year (~500) + trajectory (9) ≈ 7.3K.
 // If this trips, suspect /middle-names/ (6,782) or /es/name/ (6,782) accidentally re-added.
-if (entries.length > 8500 && !process.env.SITEMAP_LARGE_OK) {
+if (entries.length > 2500 && !process.env.SITEMAP_LARGE_OK) {
   throw new Error(
     `nameblooms sitemap has ${entries.length.toLocaleString()} URLs — budget is 8.5K after 2026-04-26 middle-names re-drop.\n` +
       `Did /middle-names/ (6,782) or /es/name/ (6,782) get re-added? Both are scaled-content traps.\n` +

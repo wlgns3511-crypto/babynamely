@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { getTopNamesForYear, getAvailableYears } from "@/lib/db";
 import { getYearInsight } from "@/lib/cluster-insights";
 import { formatPct } from "@/lib/format";
-import { itemListSchema } from "@/lib/schema";
+import { itemListSchema, yearDatasetSchema } from "@/lib/schema";
+import { AuthorBox } from "@/components/AuthorBox";
 
 interface Props { params: Promise<{ year: string }> }
 
@@ -44,6 +45,7 @@ export default async function YearPage({ params }: Props) {
   return (
     <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema(`Most Popular Baby Names in ${year}`, `/names/year/${year}/`, allNames)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(yearDatasetSchema({ year, backedRowCount: topNames.length })) }} />
       <nav className="text-sm text-slate-500 mb-4">
         <a href="/" className="hover:underline">Home</a> / <span className="text-slate-800">Popular Names in {year}</span>
       </nav>
@@ -118,6 +120,28 @@ export default async function YearPage({ params }: Props) {
         </section>
       )}
 
+      <section
+        data-upgrade="year-explainer"
+        aria-label={`How to read the ${year} list`}
+        className="my-8 rounded-xl border border-slate-200 bg-white p-5"
+      >
+        <h2 className="text-lg font-bold text-slate-900 mb-3">How to read the {year} list</h2>
+        <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+          <p>
+            The lists below show the top 50 boy and girl names registered with the SSA in {year}. The rank is computed from absolute count of US births given the name in that single year, not cumulative over multiple years. This means a name that ranked #1 in {year} may rank dozens of positions higher or lower in {year - 1} or {year + 1}.
+          </p>
+          <p>
+            <strong>What the &ldquo;biggest riser&rdquo; tells you:</strong> the rank-change comparison vs {year - 1} surfaces the year&rsquo;s cultural shift — typically driven by a major media event (a Royal birth, a hit show character, a trending celebrity name). If a riser jumped 50+ ranks, suspect a single-year media trigger; if it climbed 5–15 ranks, it&rsquo;s a slower fashion shift.
+          </p>
+          <p>
+            <strong>What the SSA file does <em>not</em> capture for {year}:</strong> names given to fewer than 5 babies are excluded (privacy threshold). For a year as old as {year < 1950 ? 'this' : 'recent ones'}, the file may be biased toward names common enough to clear the threshold — very local or community-specific names disappear. {year >= 2010 ? 'Recent years also reflect spelling fragmentation: parents pick uncommon spellings of common names, splitting the count.' : 'Earlier years show less spelling fragmentation, so name counts more closely reflect aggregate &ldquo;name family&rdquo; popularity.'}
+          </p>
+          <p>
+            <strong>Practical use:</strong> if you arrived here researching a birth-year-specific question (e.g., &ldquo;what was popular when I was born?&rdquo;), the list above answers it accurately. If you arrived researching a name-choice question (&ldquo;will this name feel dated?&rdquo;), the per-name pages provide a much better view: each name&rsquo;s timeline, archetype, and Cross-Generation Cohort Index together show whether {year} was the name&rsquo;s peak or one slice of a longer trajectory.
+          </p>
+        </div>
+      </section>
+
       <div className="grid md:grid-cols-2 gap-8">
         <section>
           <h2 className="text-xl font-bold mb-3 text-blue-700">Top Boy Names ({year})</h2>
@@ -142,6 +166,8 @@ export default async function YearPage({ params }: Props) {
           </div>
         </section>
       </div>
+
+      <AuthorBox source={`U.S. SSA national series · birth year ${year}`} />
     </div>
   );
 }

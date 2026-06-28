@@ -3,6 +3,14 @@ import { genderColor } from "@/lib/format";
 import { AdSlot } from "@/components/AdSlot";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 import { PopularEntities } from "@/components/upgrades/PopularEntities";
+import { TrustBlock } from "@/components/upgrades/TrustBlock";
+import { AuthorBox } from "@/components/AuthorBox";
+import {
+  TRUST_BLOCK_SOURCES,
+  ANALYSIS_VINTAGE,
+  DATA_TEMPORAL_COVERAGE_START,
+  DATA_TEMPORAL_COVERAGE_END,
+} from "@/lib/authorship";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { alternates: { canonical: "/" },
@@ -16,6 +24,7 @@ export default function Home() {
   const total = countNames();
   const origins = getAllOrigins();
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const coverageYears = DATA_TEMPORAL_COVERAGE_END - DATA_TEMPORAL_COVERAGE_START + 1;
 
   // Combine top boy + girl names for trending section
   const trendingItems = [
@@ -33,12 +42,46 @@ export default function Home() {
 
   return (
     <div>
-      <section className="mb-12 text-center">
+      {/* Data-sovereignty strip — source attribution + coverage above-the-fold (AdSense gate) */}
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-widest text-slate-500">
+        <span>Source · U.S. Social Security Administration (OACT) · U.S. Census</span>
+        <span className="text-slate-300">|</span>
+        <span>Coverage · {DATA_TEMPORAL_COVERAGE_START}–{DATA_TEMPORAL_COVERAGE_END} ({coverageYears} years)</span>
+        <span className="text-slate-300">|</span>
+        <a href="/methodology/" className="hover:text-purple-600 underline-offset-2 hover:underline">Methodology</a>
+      </div>
+
+      <section className="mb-6 text-center">
         <h1 className="text-4xl font-bold mb-3">Find the Perfect Baby Name</h1>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Explore {total.toLocaleString()}+ baby names with meanings, origins, and popularity trends since 1880.
+          Explore <strong className="tabular-nums">{total.toLocaleString()}</strong>+ baby names with meanings, origins, and popularity trends — drawn from the U.S. <strong>Social Security Administration</strong> baby-name registry ({DATA_TEMPORAL_COVERAGE_START}–{DATA_TEMPORAL_COVERAGE_END}) and cross-referenced against the <strong>U.S. Census Bureau</strong> first-names file.
         </p>
       </section>
+
+      {/* Quick stats — surfaces 4 dimensions above-the-fold */}
+      <section aria-label="Baby-name data coverage" className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-purple-700 tabular-nums">{total.toLocaleString()}</div>
+          <div className="text-xs text-slate-500 mt-1">Names Tracked</div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-purple-700 tabular-nums">{coverageYears}</div>
+          <div className="text-xs text-slate-500 mt-1">Years of Trends</div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-purple-700 tabular-nums">{origins.length}</div>
+          <div className="text-xs text-slate-500 mt-1">Origins Covered</div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-purple-700 tabular-nums">{TRUST_BLOCK_SOURCES.length}</div>
+          <div className="text-xs text-slate-500 mt-1">Upstream Sources</div>
+        </div>
+      </section>
+
+      <TrustBlock
+        sources={[...TRUST_BLOCK_SOURCES]}
+        updated={ANALYSIS_VINTAGE}
+      />
 
       <PopularEntities
         heading="Trending Baby Names"
@@ -108,6 +151,8 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      <AuthorBox />
     </div>
   );
 }

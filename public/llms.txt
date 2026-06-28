@@ -1,0 +1,28 @@
+# NameBlooms
+
+> Baby Name Meanings, Origins & Popularity
+
+Discover the perfect baby name. Explore 6,000+ names with meanings, origins, popularity trends since 1880, and side-by-side comparisons.
+
+## Core pages
+- [Methodology and data sources](https://nameblooms.com/methodology/): how every figure is derived, with primary-source citations
+- [Compare](https://nameblooms.com/compare/): side-by-side comparison
+- [About and editorial standards](https://nameblooms.com/about/): authorship and review policy
+
+## Key name
+- [Boy](https://nameblooms.com/names/gender/boy/)
+- [Girl](https://nameblooms.com/names/gender/girl/)
+- [A](https://nameblooms.com/names/letter/a/)
+- [B](https://nameblooms.com/names/letter/b/)
+- [C](https://nameblooms.com/names/letter/c/)
+- [D](https://nameblooms.com/names/letter/d/)
+- [E](https://nameblooms.com/names/letter/e/)
+- [F](https://nameblooms.com/names/letter/f/)
+- [G](https://nameblooms.com/names/letter/g/)
+- [H](https://nameblooms.com/names/letter/h/)
+- [I](https://nameblooms.com/names/letter/i/)
+- [J](https://nameblooms.com/names/letter/j/)
+
+## Data
+- Primary sources: U.S. Social Security Administration, U.S. Census Bureau, Behind the Name, Wikimedia Foundation
+- All figures are derived from these primary sources; see /methodology/ for derivation and vintage.

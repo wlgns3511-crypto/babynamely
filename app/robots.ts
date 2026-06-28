@@ -8,9 +8,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       // 2026-04-28 — scaled-content tree exclusions (AdSense remediation).
       // See public/robots.txt header comment for the full rationale.
-      { userAgent: "*", allow: "/", disallow: ["/api/", "/_next/", "/middle-names/", "/es/"] },
-      { userAgent: "Mediapartners-Google", disallow: ["/middle-names/", "/es/"] },
-      { userAgent: "AdsBot-Google", disallow: ["/middle-names/", "/es/"] },
+      { userAgent: "*", allow: "/", disallow: ["/api/", "/_next/", "/middle-names/"] },
+      { userAgent: "Mediapartners-Google", disallow: ["/middle-names/"] },
+      { userAgent: "AdsBot-Google", disallow: ["/middle-names/"] },
       { userAgent: "AhrefsBot", disallow: ["/"] },
       { userAgent: "SemrushBot", disallow: ["/"] },
       { userAgent: "MJ12bot", disallow: ["/"] },

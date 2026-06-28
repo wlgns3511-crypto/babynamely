@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { UpgradeAnalytics } from "@/components/upgrades/UpgradeAnalytics";
+import RelatedSites from "@/components/RelatedSites";
 
 // 2026-04-23 structural fix — do NOT reintroduce `headers()` in this layout.
 // Any dynamic API (headers, cookies, draftMode, searchParams) in the root
@@ -22,7 +23,6 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nameblooms.com";
 
 const ROOT_ALTERNATE_LANGUAGES = {
   en: `${SITE_URL}/`,
-  es: `${SITE_URL}/es/`,
   'x-default': `${SITE_URL}/`,
 } as const;
 
@@ -99,8 +99,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <a href="/compare/" className="hover:text-purple-600">Compare</a>
               <a href="/state/" className="hover:text-purple-600">By State</a>
               <a href="/insights/" className="hover:text-purple-600">Insights</a>
-              <a href="/guide/" className="hover:text-purple-600">Guides</a>
-              <a href="/blog/" className="hover:text-purple-600">Articles</a>
               {/* 2026-04-28 — global "ES" toggle removed. /es/* is robots-disallowed
                   for AdSense crawler (scaled-content remediation). Linking from
                   every indexable page would route AdSense reviewer into the
@@ -116,6 +114,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <p className="mt-2">
               <a href="/about/" className="hover:text-purple-600">About</a>
               {" | "}
+              <a href="/methodology/" className="hover:text-purple-600">Methodology</a>
+              {" | "}
+              <a href="/editorial-policy/" className="hover:text-purple-600">Editorial Policy</a>
+              {" | "}
+              <a href="/corrections-policy/" className="hover:text-purple-600">Corrections</a>
+              {" | "}
               <a href="/privacy/" className="hover:text-purple-600">Privacy</a>
               {" | "}
               <a href="/terms/" className="hover:text-purple-600">Terms</a>
@@ -124,15 +128,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               {" | "}
               <a href="/contact/" className="hover:text-purple-600">Contact</a>
             </p>
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">You Might Also Like</p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                <a href="https://vocabwize.com" className="hover:text-purple-600" rel="nofollow noopener">Vocabulary</a>
-                <a href="https://degreewize.com" className="hover:text-purple-600" rel="nofollow noopener">Colleges</a>
-                <a href="https://zippeek.com" className="hover:text-purple-600" rel="nofollow noopener">ZIP Codes</a>
-                <a href="https://caloriewize.com" className="hover:text-purple-600" rel="nofollow noopener">Nutrition</a>
-              </div>
-            </div>
+            <RelatedSites currentSite="NameBlooms" accentClass="hover:text-purple-600" label="You Might Also Like" />
             <p className="mt-3 text-xs italic text-slate-400">Celebrating the stories behind every name, from classic to trending.</p>
             <p className="mt-1">&copy; {new Date().getFullYear()} {SITE_NAME}. Not affiliated with any government agency.</p>
           </div>

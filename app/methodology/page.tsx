@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthorBox } from "@/components/AuthorBox";
 
 export const metadata: Metadata = {
   title: "Our Methodology — How NameBlooms Builds Its Baby Name Data",
@@ -203,19 +204,86 @@ export default function MethodologyPage() {
         </li>
       </ul>
 
+      <h2>SSA OACT files we ingest, in detail</h2>
+      <p>
+        Two SSA OACT files back every popularity figure on NameBlooms. The SSA OACT
+        national file covers 1880-present and lists every first name given to at least
+        5 babies of the same gender in a given year nationally; this is the SSA OACT
+        file behind the per-name pages and behind the all-time peak-year and trajectory
+        figures. The SSA OACT state-level file covers ~1910-present across 51
+        jurisdictions (50 states + DC) and applies the same 5-occurrence SSA OACT
+        privacy threshold separately within each jurisdiction; this is the SSA OACT
+        file behind every state page and behind the state-distinctive-pick analysis.
+        Both files are public-domain US government datasets published by SSA OACT at
+        ssa.gov/oact/babynames with column definitions, the SSA OACT privacy threshold,
+        and the file format documented openly by SSA OACT itself.
+      </p>
+
+      <h2>Cross-Generation Cohort Index (CGCI): the rule</h2>
+      <p>
+        On top of the raw SSA OACT national series, NameBlooms computes the
+        Cross-Generation Cohort Index (CGCI), a deterministic 5-bucket classifier
+        documented at .
+        The CGCI rule sums each name&apos;s SSA OACT-reported births within each of
+        seven generation cohorts (Lost Generation, Greatest, Silent, Boomers, Gen X,
+        Millennials, Gen Z) using the SSA / Pew-defined cohort year boundaries, then
+        bins the name based on how many of those seven cohorts carry at least 12% of
+        the name&apos;s all-time SSA OACT-reported births: Multi-Generation Staple
+        (4+ cohorts qualify), Cross-Era Classic (3 cohorts), Single-Generation Spike
+        (1 cohort), Fading Classic (peak cohort is Boomers or earlier), or Emergent
+        (peak cohort is Millennials or Gen Z and total SSA OACT-reported births are
+        below a small-corpus floor). The 12% carry-share threshold and the 7 SSA /
+        Pew cohort boundaries are fixed in source code at lib/cohort-index.ts and
+        are not adjusted per-name.
+      </p>
+
+      <h2>Interpretation Strip: the rule</h2>
+      <p>
+        The Interpretation Strip classifier bins each name into one of six
+        interpretation categories based on the SSA OACT trajectory shape, the SSA
+        OACT peak year, and the SSA OACT recent-trend slope. The six categories are
+        Legendary Classic (large all-time SSA OACT corpus + sustained presence
+        across many SSA OACT release-years), Vintage Revival (SSA OACT peak ≥60
+        years ago but SSA OACT recent slope is positive), Modern Mainstream (SSA
+        OACT peak within the last 30 years and still in the top tier of the most
+        recent SSA OACT release), Niche Pick (small SSA OACT corpus but stable),
+        Fading (SSA OACT recent slope is negative and SSA OACT peak is past), and
+        Recent Burst (SSA OACT peak within the last 10 years and recent slope is
+        sharply positive). The rule is fixed in source code at
+        lib/name-classifier.ts and documented at{" "}
+        .
+      </p>
+
+      <h2>What CGCI and the Interpretation Strip do not claim</h2>
+      <p>
+        Both classifiers describe what the SSA OACT record shows; neither predicts
+        what the SSA OACT record will show next year. A Multi-Generation Staple is
+        a name whose all-time SSA OACT-reported births are spread across many
+        cohorts — it is not a guarantee that the next SSA OACT release will continue
+        the pattern. A Recent Burst name is one whose SSA OACT recent slope is
+        sharply positive — it is not a guarantee of future SSA OACT growth. The
+        classifiers are deterministic descriptions of past SSA OACT behavior; they
+        are not forecasts.
+      </p>
+
       <h2>Corrections and feedback</h2>
       <p>
         If you find an origin, meaning, or cultural note you believe is
         wrong, please <a href="/contact/">contact us</a> with the name and
         the source you trust. Corrections from careful readers are how we
-        improve the dataset.
+        improve the dataset. For SSA OACT-derived figures (popularity, peak year,
+        trajectory), the full triage workflow against the underlying SSA OACT
+        record lives on the <a href="/corrections-policy/">corrections policy</a>{" "}
+        page.
       </p>
 
       <p className="text-sm text-slate-500 border-t pt-4 mt-8">
-        This methodology page was last reviewed in March 2026. Material
+        This methodology page was last reviewed on April 1, 2026. Material
         changes to how we source or compute the data will be reflected
         here before they reach production pages.
       </p>
+
+      <AuthorBox />
     </article>
   );
 }

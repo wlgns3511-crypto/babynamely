@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getNamesByOrigin, getAllOrigins } from "@/lib/db";
 import { getOriginInsight } from "@/lib/cluster-insights";
+import { AuthorBox } from "@/components/AuthorBox";
 
 interface Props { params: Promise<{ origin: string }> }
 
@@ -109,6 +110,28 @@ export default async function OriginPage({ params }: Props) {
         </section>
       )}
 
+      <section
+        data-upgrade="origin-explainer"
+        aria-label={`How to read the ${cap} origin list`}
+        className="my-8 rounded-xl border border-slate-200 bg-white p-5"
+      >
+        <h2 className="text-lg font-bold text-slate-900 mb-3">How to read the {cap} origin list</h2>
+        <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+          <p>
+            Origin classification reflects the <em>etymological root</em> of each name, not the language a child&rsquo;s family currently speaks. A name of {cap} origin can appear in any cultural community — origin tells you where the word came from, not who&rsquo;s using it now. Our {cap} pool contains {insight.count.toLocaleString()} distinct names sourced from etymology references and the SSA file&rsquo;s metadata.
+          </p>
+          <p>
+            <strong>What &ldquo;trending up 2020s&rdquo; flag tells you:</strong> we compute the share of {cap}-origin names appearing in the recent SSA top-1,000 vs the historical baseline. {insight.isCurrentlyTrending ? `${cap}-origin names are gaining share among current parents — meaning the etymology category as a whole is in fashion right now.` : `${cap}-origin names are stable or cooling among current parents — the category as a whole is not in active fashion movement.`} This is a category-level signal; individual names within the category can move opposite to the category trend.
+          </p>
+          <p>
+            <strong>What this view does <em>not</em> capture:</strong> origin is often disputed (some names have multiple plausible etymologies), and our classification picks the most-cited root rather than enumerating all possibilities. Migration history also matters — a name of {cap} origin may have entered American naming culture via a third country&rsquo;s diaspora rather than directly. We do not capture diaspora pathways.
+          </p>
+          <p>
+            <strong>Practical use:</strong> if you&rsquo;re researching {cap}-origin names for heritage reasons, treat this list as a discovery surface rather than a definitive cultural authority. Cross-reference with community-specific naming references for nuance — etymology and community tradition do not always overlap. Click into individual names to see Cross-Generation Cohort Index, which shows whether each name resonates with current parents or only with older cohorts.
+          </p>
+        </div>
+      </section>
+
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
         {names.map((n) => (
           <a key={n.slug} href={`/name/${n.slug}/`} className="p-3 border border-slate-100 rounded-lg hover:bg-purple-50">
@@ -118,6 +141,8 @@ export default async function OriginPage({ params }: Props) {
           </a>
         ))}
       </div>
+
+      <AuthorBox source={`Etymological references cross-referenced with U.S. SSA national series (1880–2024) · ${cap} origin`} />
     </div>
   );
 }

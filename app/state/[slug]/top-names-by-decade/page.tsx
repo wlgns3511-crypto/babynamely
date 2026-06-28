@@ -7,6 +7,7 @@ import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { EditorNote } from "@/components/EditorNote";
 import { DataSourceBadge } from "@/components/DataSourceBadge";
 import { AuthorBox } from "@/components/AuthorBox";
+import { ANALYSIS_VINTAGE } from "@/lib/authorship";
 import { AdSlot } from "@/components/AdSlot";
 import { FreshnessTag } from "@/components/FreshnessTag";
 
@@ -129,10 +130,12 @@ export default async function TopNamesByDecadePage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(crumbs)) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }}
-      />
+      {(faqs?.length ?? 0) > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }}
+        />
+      )}
 
       <nav className="mb-6 text-sm text-slate-500">
         <Link href="/" className="hover:text-pink-700">
@@ -163,7 +166,7 @@ export default async function TopNamesByDecadePage({ params }: Props) {
         </div>
       </header>
 
-      <EditorNote note="Decade rankings are national SSA data — the only publicly complete series going back to the 1920s. We add state-specific cultural context (how these national names mapped to regional naming traditions) but don't invent state decade rankings where SSA never released them." />
+      <EditorNote note="Decade rankings are national SSA OACT data — the only publicly complete series going back to the 1920s. State-level decade rankings are limited to where SSA OACT actually released them; we layer regional cultural context on top of the national rankings rather than inferring state rankings the SSA OACT record does not contain." />
 
       {/* Top summary card */}
       <section aria-label="Overlap summary" className="my-6">
@@ -445,7 +448,7 @@ export default async function TopNamesByDecadePage({ params }: Props) {
         ]}
       />
 
-      <AuthorBox />
+      <AuthorBox vintage={ANALYSIS_VINTAGE} />
     </article>
   );
 }

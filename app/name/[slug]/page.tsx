@@ -2,9 +2,16 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Database from "better-sqlite3";
 import path from "path";
-import { getNameBySlug, getAllNames, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getStaticComparisonHref, getStaticComparisonsForSlug, getNameStats, getNameRank, getLatestPopularity, getNamePeers } from "@/lib/db";
+import { getNameBySlug, getNameSlugsPage, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getStaticComparisonHref, getStaticComparisonsForSlug, getNameStats, getNameRank, getLatestPopularity, getNamePeers } from "@/lib/db";
 import { formatPct, genderColor, genderBg } from "@/lib/format";
-import { breadcrumbSchema, faqSchema } from "@/lib/schema";
+import { breadcrumbSchema, faqSchema, nameDatasetSchema } from "@/lib/schema";
+import { ANALYSIS_VINTAGE } from "@/lib/authorship";
+import {
+  getSameArchetypePeers,
+  getCohortRank,
+  getLetterRank,
+} from "@/lib/name-context";
+import { NameContextStrip } from "@/components/upgrades/NameContextStrip";
 import { analyzeName } from "@/lib/name-analysis";
 import { getNameFacts } from "@/lib/name-facts";
 import { generateCommentary } from "@/lib/name-commentary";
@@ -16,6 +23,7 @@ import { EmbedButton } from "@/components/EmbedButton";
 import { FreshnessTag } from "@/components/FreshnessTag";
 import { NamePopularityPredictor } from "@/components/NamePopularityPredictor";
 import { PopularityTimeline } from "@/components/tools/PopularityTimeline";
+import { NameTrajectorySparkline } from "@/components/NameTrajectorySparkline";
 import { AuthorBox } from "@/components/AuthorBox";
 import { EditorNote } from "@/components/EditorNote";
 import { DidYouKnow } from "@/components/DidYouKnow";
@@ -34,7 +42,20 @@ import { ArchetypeBadge } from '@/components/upgrades/ArchetypeBadge';
 import { getArchetypeForSlug, ARCHETYPES, countNamesByArchetype } from '@/lib/archetype';
 import { CohortFact } from '@/components/upgrades/CohortFact';
 import { getCohortFact } from '@/lib/cohort';
+import { classifyCohortIndex } from '@/lib/cohort-index';
+import { classifyInterpretation, classifyNameBranching, type ClassifierBranchingContext } from '@/lib/name-classifier';
+import { classifyNameFit, phoneticPatternForName, NAME_FIT_LABEL, NAME_FIT_TONE, type NameFitResult } from '@/lib/name-fit';
+import {
+  generateCgciExplainerReaderHelp,
+  generateInterpretationStripCategoriesReaderHelp,
+  type NameReaderHelp,
+} from '@/lib/hub-reader-help';
+import { InterpretationStrip } from '@/components/upgrades/InterpretationStrip';
 import { getAllGuides } from "@/lib/guides";
+import { classifyCrosswalkName, nameCrosswalkTitleTag, nameVariableMeasured } from '@/lib/crosswalk-nameblooms';
+import { MiddleNameCalculator } from "@/components/MiddleNameCalculator";
+import { getProprietaryNameMetrics } from "@/lib/proprietary-metrics";
+import { ProprietaryMetricsBlock } from "@/components/upgrades/ProprietaryMetricsBlock";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -64,6 +85,114 @@ const trendLabels: Record<string, string> = {
   rising: "Trending Up", falling: "Less Common Now", stable: "Steady", classic: "Timeless Classic", vintage_revival: "Vintage Revival", new: "Rare & Unique",
 };
 
+const NAME_FIT_TONE_CLASS: Record<string, string> = {
+  indigo: 'border-indigo-200 bg-indigo-50 text-indigo-950',
+  rose: 'border-rose-200 bg-rose-50 text-rose-950',
+  emerald: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+  teal: 'border-teal-200 bg-teal-50 text-teal-950',
+  slate: 'border-slate-200 bg-slate-50 text-slate-950',
+};
+
+function hasCrossCulturalSignal(origin: string | null): boolean {
+  if (!origin) return false;
+  const o = origin.toLowerCase();
+  return [
+    'arabic', 'celtic', 'french', 'gaelic', 'german', 'greek', 'hebrew',
+    'irish', 'italian', 'japanese', 'latin', 'norse', 'persian', 'sanskrit',
+    'slavic', 'spanish', 'welsh',
+  ].some((marker) => o.includes(marker));
+}
+
+function NameFitSection({ name, fit }: { name: string; fit: NameFitResult }) {
+  const tone = NAME_FIT_TONE_CLASS[NAME_FIT_TONE[fit.primaryBucket]] ?? NAME_FIT_TONE_CLASS.slate;
+  return (
+    <section className={`my-8 rounded-xl border p-5 ${tone}`} data-upgrade="name-fit">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wider opacity-75">NameFit lens</div>
+          <h2 className="text-2xl font-bold mt-1">{name}: {NAME_FIT_LABEL[fit.primaryBucket]}</h2>
+        </div>
+        {fit.secondaryBucket && (
+          <span className="rounded-full border border-white/60 bg-white/70 px-3 py-1 text-xs font-semibold">
+            Secondary: {NAME_FIT_LABEL[fit.secondaryBucket]}
+          </span>
+        )}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 text-sm leading-relaxed">
+        <div>
+          <h3 className="font-semibold mb-1">Best fit for</h3>
+          <p>{fit.bestFitParents}</p>
+        </div>
+        <div>
+          <h3 className="font-semibold mb-1">Consider alongside</h3>
+          <p>{fit.considerationsFor}</p>
+        </div>
+        <div>
+          <h3 className="font-semibold mb-1">Tradeoff to notice</h3>
+          <p>{fit.notIdealIf}</p>
+        </div>
+        <div>
+          <h3 className="font-semibold mb-1">Data note</h3>
+          <p>{fit.dataNote}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ClassifierBranching({ name, branching }: { name: string; branching: ClassifierBranchingContext }) {
+  const headings = ['Rank frame', 'Fit overlay', 'Common trap', 'How to use it'];
+  return (
+    <section className="my-8 rounded-xl border border-slate-200 bg-white p-5" data-upgrade="classifier-branching">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Classifier branching</div>
+          <h2 className="text-xl font-bold text-slate-900 mt-1">{name}: {branching.tierLabel}</h2>
+        </div>
+        {branching.fitBuckets.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {branching.fitBuckets.map((bucket) => (
+              <span key={bucket} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                {NAME_FIT_LABEL[bucket]}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {branching.paragraphs.map((paragraph, index) => (
+          <div key={headings[index]} className="rounded-lg bg-slate-50 p-4">
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">{headings[index]}</h3>
+            <p className="text-sm leading-relaxed text-slate-700">{paragraph}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ReaderHelpHub({ items }: { items: Array<{ title: string; help: NameReaderHelp }> }) {
+  return (
+    <section className="my-8 rounded-xl border border-purple-100 bg-purple-50/60 p-5" data-upgrade="reader-help-hub">
+      <div className="text-xs font-bold uppercase tracking-wider text-purple-700">Reader help hub</div>
+      <h2 className="text-xl font-bold text-slate-900 mt-1 mb-4">How to use these name signals</h2>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {items.map(({ title, help }) => (
+          <article key={title} className="rounded-lg border border-purple-100 bg-white p-4">
+            <h3 className="font-semibold text-slate-900 mb-2">{title}</h3>
+            <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+              <p>{help.intro}</p>
+              <p>{help.whatItMeans}</p>
+              <p>{help.howToUse}</p>
+              <p>{help.caveats}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // 2026-04-24 — MUST stay `false`. Next.js 16 App Router bug: with
 // `dynamicParams = true` + `notFound()` + SSG, the not-found response is
 // cached as a 200 prerender (x-nextjs-prerender: 1, x-nextjs-cache: HIT),
@@ -75,7 +204,7 @@ const trendLabels: Record<string, string> = {
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  return getAllNames().map((n) => ({ slug: n.slug }));
+  return getNameSlugsPage(0, 1500);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -104,14 +233,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const originBit = n.origin ? `${n.origin} origin` : '';
     const meaningBit = n.meaning ? `means "${n.meaning.slice(0, 40)}"` : '';
     const fact = [originBit, meaningBit].filter(Boolean).join(', ');
+    const { rarityScore, styleGrade } = getProprietaryNameMetrics(n);
     title = `${n.name}: #${rank} of ${total} ${n.gender === 'boy' ? 'Boy' : n.gender === 'girl' ? 'Girl' : ''} Names · Peak ${n.peak_year ?? ''}`.trim();
-    description = `${n.name} ranks #${rank} of ${total} ${genderLabel} by peak popularity (${(n.peak_pct * 100).toFixed(2)}% in ${n.peak_year ?? 'peak year'}). ${fact}.${peerStr} SSA data through 2023.`;
+    description = `[Rarity: ${rarityScore}/100, Style Grade: ${styleGrade}] ${n.name} ranks #${rank} of ${total} ${genderLabel} by peak popularity (${(n.peak_pct * 100).toFixed(2)}% in ${n.peak_year ?? 'peak year'}). ${fact}.${peerStr} SSA data through 2023.`;
   } else {
+    const { rarityScore, styleGrade } = getProprietaryNameMetrics(n);
     title = `${n.name}: Meaning, Origin & Popularity`;
-    description = `${n.name} is a ${n.gender} name${n.origin ? ` of ${n.origin} origin` : ''}${n.meaning ? ` meaning "${n.meaning}"` : ''}. Popularity trends since 1880, cultural context, similar names. SSA data through 2023.`;
+    description = `[Rarity: ${rarityScore}/100, Style Grade: ${styleGrade}] ${n.name} is a ${n.gender} name${n.origin ? ` of ${n.origin} origin` : ''}${n.meaning ? ` meaning "${n.meaning}"` : ''}. Popularity trends since 1880, cultural context, similar names. SSA data through 2023.`;
   }
+  // Phase 7 P1 (§3.3 crosswalk): surface verdict + archetype tier in title.
+  // title.absolute bypasses the ` | NameBlooms` 13c suffix from layout.tsx so
+  // the worst-case stays well inside the 60c length guard (Trap #112).
+  const crosswalk = classifyCrosswalkName(slug, n.name);
+  const crosswalkTitle = crosswalk
+    ? `${n.name} — ${nameCrosswalkTitleTag(crosswalk)}`
+    : null;
   return {
-    title,
+    title: crosswalkTitle ? { absolute: crosswalkTitle } : title,
     description,
     alternates: { canonical: `/name/${slug}/` },
     openGraph: { url: `/name/${slug}/` },
@@ -123,9 +261,14 @@ export default async function NamePage({ params }: Props) {
   const n = getNameBySlug(slug);
   if (!n) notFound();
 
+  const { rarityScore, harmonyScore, styleGrade, commentary: proprietaryCommentary } = getProprietaryNameMetrics(n);
+
   const popularity = getPopularity(slug);
   const similar = getSimilarNames(slug, n.gender, 12);
   const analysis = analyzeName(n.name, n.gender, n.origin, n.meaning, n.peak_year, n.peak_pct, popularity);
+  // Phase 7 §3.3 crosswalk — same call as generateMetadata so verdict surfaces
+  // identically in title.absolute and the AnswerHero body chip.
+  const crosswalk = classifyCrosswalkName(slug, n.name);
   // Layer 1+2 (2026-04-28 AdSense low-value-content remediation): per-page
   // unique data + fact-bound commentary. Replaces templated trend strings.
   const facts = getNameFacts(slug);
@@ -135,10 +278,93 @@ export default async function NamePage({ params }: Props) {
   const archetypeMeta = archetypeSlug ? ARCHETYPES[archetypeSlug] : null;
   const archetypeTotal = archetypeSlug ? countNamesByArchetype(archetypeSlug) : 0;
   const cohortFact = getCohortFact(slug);
+  const archetypePeers = archetypeSlug
+    ? getSameArchetypePeers(slug, n.gender, archetypeSlug, n.peak_year ?? null)
+    : [];
+  const cohortRank = cohortFact?.dominantCohort
+    ? getCohortRank(n.gender, cohortFact.dominantCohort, cohortFact.totalBirths)
+    : null;
+  const letterRank = getLetterRank(slug, n.name, n.gender, n.peak_pct ?? null);
 
   const nameStats = getNameStats();
   const nameRank = getNameRank(slug);
   const latestPop = getLatestPopularity(slug);
+
+  // Phase D — Cross-Generation Cohort Index + Interpretation Strip (2026-05-10).
+  // Page-specific lever: classifies the name by cohort-portfolio shape and
+  // renders a category-specific 4-section explainer.
+  const cohortIndex = classifyCohortIndex(n.name, popularity);
+  const recentTrendPct = (() => {
+    const last5 = popularity.filter((p) => p.year >= 2020 && p.year <= 2024);
+    if (last5.length === 0) return null;
+    return last5.reduce((s, r) => s + r.pct, 0) / last5.length;
+  })();
+  const interpretationContext = classifyInterpretation({
+    name: n.name,
+    gender: n.gender,
+    peakYear: n.peak_year,
+    peakPct: n.peak_pct,
+    cohortIndex,
+    recentTrendPct,
+    totalNamesInGender: nameStats.totalNames,
+    rank: nameRank,
+  });
+  const nameFit = classifyNameFit({
+    name: n.name,
+    cgciCohort: cohortIndex?.bucket ?? null,
+    length: n.name.length,
+    phoneticPattern: phoneticPatternForName(n.name),
+    crossCulturalUsage: hasCrossCulturalSignal(n.origin),
+  });
+  const fitBuckets = [
+    nameFit.primaryBucket,
+    ...(nameFit.secondaryBucket ? [nameFit.secondaryBucket] : []),
+  ];
+  const classifierBranching = classifyNameBranching({
+    name: n.name,
+    gender: n.gender,
+    peakYear: n.peak_year,
+    peakPct: n.peak_pct,
+    cohortIndex,
+    recentTrendPct,
+    totalNamesInGender: nameStats.totalNames,
+    rank: nameRank,
+    fitBuckets,
+  });
+  const readerHelpItems = [
+    {
+      title: 'Cross-Generation Cohort Index',
+      help: generateCgciExplainerReaderHelp({
+        name: n.name,
+        gender: n.gender,
+        rank: nameRank,
+        totalNames: nameStats.totalNames,
+        peakYear: n.peak_year,
+        peakPct: n.peak_pct,
+        origin: n.origin,
+        meaning: n.meaning,
+        cohortIndex,
+        interpretationCategory: interpretationContext.category,
+        fitBucket: nameFit.primaryBucket,
+      }),
+    },
+    {
+      title: 'Interpretation category',
+      help: generateInterpretationStripCategoriesReaderHelp({
+        name: n.name,
+        gender: n.gender,
+        rank: nameRank,
+        totalNames: nameStats.totalNames,
+        peakYear: n.peak_year,
+        peakPct: n.peak_pct,
+        origin: n.origin,
+        meaning: n.meaning,
+        cohortIndex,
+        interpretationCategory: interpretationContext.category,
+        fitBucket: nameFit.primaryBucket,
+      }),
+    },
+  ];
   const autoFaqs = generateAutoFAQs(n, nameStats, nameRank, latestPop, similar);
   const faqs: { question: string; answer: string }[] = [
     ...(n.meaning ? [{ question: `What does ${n.name} mean?`, answer: `${n.name} means "${n.meaning}"${n.origin ? ` and comes from ${n.origin} origin` : ''}. ${analysis.culturalContext.split('.').join('.')}.` }] : []),
@@ -171,6 +397,18 @@ export default async function NamePage({ params }: Props) {
         subtitle={n.gender === 'boy' ? 'Boy name' : 'Girl name'}
         tagline={`${n.meaning ? `Means "${n.meaning}". ` : ''}${n.origin ? `${n.origin} origin. ` : ''}${n.peak_year ? `Peaked in ${n.peak_year}${n.peak_pct ? ` at ${formatPct(n.peak_pct)} of US babies` : ''}. ` : ''}${trendLabels[analysis.trendStatus]}.`}
         badges={[
+          ...(crosswalk
+            ? [{
+                label: `${crosswalk.verdict} · ${crosswalk.tierTag}`,
+                tone: (crosswalk.verdictKey === 'A'
+                  ? 'emerald'
+                  : crosswalk.verdictKey === 'B'
+                    ? 'indigo'
+                    : crosswalk.verdictKey === 'C'
+                      ? 'amber'
+                      : 'slate') as 'emerald' | 'indigo' | 'amber' | 'slate',
+              }]
+            : []),
           { label: n.gender === 'boy' ? 'Boy' : 'Girl', tone: n.gender === 'boy' ? 'indigo' : 'amber' },
           ...(n.origin ? [{ label: n.origin, tone: 'slate' as const }] : []),
           { label: `${analysis.syllableCount} syllable${analysis.syllableCount > 1 ? 's' : ''}`, tone: 'slate' as const },
@@ -245,6 +483,13 @@ export default async function NamePage({ params }: Props) {
           (2026-04-28 AdSense low-value-content remediation). */}
       {facts && commentary ? <LiveStats name={n.name} facts={facts} commentary={commentary} /> : null}
 
+      <ProprietaryMetricsBlock
+        rarityScore={rarityScore}
+        harmonyScore={harmonyScore}
+        styleGrade={styleGrade}
+        commentary={proprietaryCommentary}
+      />
+
       {/* Phase A — SSA per-state heatmap (2026-05-03 thin-site escape).
           Real per-state×year data from SSA SOOC namesbystate.zip. Each name
           renders a unique top-states list + 51-cell intensity grid. */}
@@ -263,6 +508,38 @@ export default async function NamePage({ params }: Props) {
       {/* Phase C — Cohort fact (2026-05-03). Pure derivation from popularity ×
           year_totals: first sustained year + dominant generation cohort. */}
       {cohortFact && <CohortFact name={n.name} fact={cohortFact} />}
+
+      {/* Phase D — Cross-Generation Cohort Index + Interpretation Strip
+          (2026-05-10). Page-specific lever: classifies cohort portfolio
+          shape (5 buckets) and renders 4-section reader-help explainer. */}
+      {cohortIndex && (
+        <InterpretationStrip
+          name={n.name}
+          cohortIndex={cohortIndex}
+          context={interpretationContext}
+        />
+      )}
+
+      <NameFitSection name={n.name} fit={nameFit} />
+
+      <ClassifierBranching name={n.name} branching={classifierBranching} />
+
+      <ReaderHelpHub items={readerHelpItems} />
+
+      <NameContextStrip
+        name={n.name}
+        gender={n.gender}
+        archetype={archetypeSlug}
+        archetypePeers={archetypePeers}
+        dominantCohort={cohortFact?.dominantCohort ?? null}
+        cohortRank={cohortRank}
+        letterRank={letterRank}
+      />
+
+      <MiddleNameCalculator
+        firstName={n.name}
+        gender={n.gender}
+      />
 
       {/* Data Insights */}
       {(() => {
@@ -331,6 +608,14 @@ export default async function NamePage({ params }: Props) {
         <div className="bg-slate-50 border-l-4 border-slate-300 p-4 rounded-r-lg mb-4">
           <p className="text-slate-700 text-sm">{analysis.trendDescription}</p>
         </div>
+        {/* Full-arc sparkline (server SVG, 1880-2024 annual, peak + latest labeled) */}
+        <NameTrajectorySparkline
+          name={n.name}
+          gender={n.gender}
+          peakYear={n.peak_year}
+          peakPct={n.peak_pct}
+          popularity={popularity}
+        />
         {decades.length > 0 && (
           <div className="space-y-1">
             {decades.map((d) => {
@@ -544,14 +829,7 @@ export default async function NamePage({ params }: Props) {
       <section className="mt-10 mb-10">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Related Guides</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {getAllGuides().slice(0, 4).map((g) => (
-            <a key={g.slug} href={`/guide/${g.slug}/`}
-              className="block p-4 rounded-lg border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-200 transition-colors">
-              <div className="text-xs font-semibold text-purple-600 mb-1 uppercase tracking-wide">{g.category}</div>
-              <div className="text-sm font-bold text-slate-900 leading-snug mb-1">{g.title}</div>
-              <div className="text-xs text-slate-500 line-clamp-2">{g.description}</div>
-            </a>
-          ))}
+          
         </div>
       </section>
 
@@ -649,7 +927,7 @@ export default async function NamePage({ params }: Props) {
 
       <NamePopularityPredictor />
 
-      <AuthorBox />
+      <AuthorBox vintage={ANALYSIS_VINTAGE} />
 
       <FreshnessTag source="Social Security Administration" />
 
@@ -685,14 +963,17 @@ export default async function NamePage({ params }: Props) {
 
       <CrossSiteLinks current="NameBlooms" />
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        ...breadcrumbSchema(breadcrumbs),
-        author: { "@type": "Organization", name: "DataPeek" },
-      }) }} />
-      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        ...faqSchema(faqs),
-        author: { "@type": "Organization", name: "DataPeek" },
-      }) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(nameDatasetSchema({
+        name: n.name,
+        slug,
+        gender: n.gender,
+        peakYear: n.peak_year,
+        peakPct: n.peak_pct,
+        backedRowCount: popularity.length,
+        extraVariableMeasured: crosswalk ? nameVariableMeasured(crosswalk) : undefined,
+      })) }} />
+      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} />}
     </div>
   );
 }

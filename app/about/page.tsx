@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthorBox } from "@/components/AuthorBox";
 
 export const metadata: Metadata = {
   title: "About NameBlooms — Methodology, Sources & Editorial Process",
@@ -61,9 +62,10 @@ export default function AboutPage() {
           decade share is climbing; we do not forecast 2030 rankings.
         </li>
         <li>
-          <strong>We don't fabricate cultural commentary.</strong> Era and decade context is
-          attached to factual peak years, not invented to fill space. If we don't have data on a
-          name's pre-1880 history, we say so rather than inventing etymology.
+          <strong>Cultural commentary is tied to factual peak years.</strong> Era and decade
+          context is anchored to the SSA OACT peak year, not added to fill space. For a name
+          with no pre-1880 SSA OACT presence, the page says so and stops there rather than
+          extending the etymology speculatively.
         </li>
         <li>
           <strong>We don't accept paid placement.</strong> No name appears in our top lists,
@@ -122,12 +124,57 @@ export default function AboutPage() {
         changes are auditable.
       </p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-3">Contact</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">SSA OACT as the single primary source</h2>
       <p>
-        Found an error in a meaning, an etymology, or a popularity figure? Reach us via the{" "}
-        <Link href="/contact/" className="text-purple-700 underline">Contact page</Link>. We
-        review reader corrections and update the source data when warranted.
+        Every rank, percentage, peak year, and trajectory figure on NameBlooms originates from the
+        US Social Security Administration&apos;s Office of the Chief Actuary (SSA OACT) annual
+        baby-name release. Two SSA OACT files back the site: the SSA OACT national file (1880-
+        present, covering every first name given to at least 5 babies of the same gender per year
+        nationally) and the SSA OACT state-level file (51 jurisdictions, ~1910-present, applying
+        the same SSA OACT 5-count threshold separately to each state). The SSA OACT national file
+        and the SSA OACT state files are public-domain US government datasets. SSA OACT publishes
+        the methodology, the column definitions, and the 5-count privacy threshold openly at
+        ssa.gov/oact/babynames so any reader can verify how the SSA OACT figures behind any
+        NameBlooms page were collected and what they omit.
       </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">SSA OACT-derived levers atop the raw record</h2>
+      <p>
+        On top of the SSA OACT record we compute two NameBlooms editorial classifiers. The Cross-
+        Generation Cohort Index (CGCI) bins each name into one of five buckets (Multi-Generation
+        Staple, Cross-Era Classic, Single-Generation Spike, Fading Classic, Emergent) based on
+        which SSA / Pew-defined generation cohorts carry at least 12% of the name&apos;s all-time
+        SSA OACT-reported births. The Interpretation Strip classifier bins each name into one of
+        six interpretation categories (Legendary Classic, Vintage Revival, Modern Mainstream,
+        Niche Pick, Fading, Recent Burst) based on the name&apos;s SSA OACT trajectory shape. Both
+        classifiers are NameBlooms editorial constructs computed from the SSA OACT series; they
+        are not SSA OACT-published fields. We document the rules at /guide/cgci-explainer/ and
+        /guide/interpretation-strip-categories/ so any reader can verify the math against the
+        underlying SSA OACT record.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">SSA OACT refresh cadence and dataset vintage</h2>
+      <p>
+        SSA OACT publishes the baby-name file once per year, typically each May, covering births
+        from the previous calendar year. We re-ingest the SSA OACT national file and the SSA OACT
+        state-level files within days of each SSA OACT release. The page footer on every name
+        page shows the SSA OACT vintage (the SSA OACT release date) so a reader can see at a
+        glance how fresh the SSA OACT-derived figures are. Between SSA OACT releases, we do not
+        re-stamp pages with a current date that the SSA OACT file does not support.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">Contact and corrections</h2>
+      <p>
+        Found an error in a meaning, an etymology, an SSA OACT-derived popularity figure, a CGCI
+        bucket assignment, or an Interpretation Strip category label? Reach us via the{" "}
+        <Link href="/contact/" className="text-purple-700 underline">Contact page</Link>. Our
+        full correction workflow is documented on the{" "}
+        <Link href="/corrections-policy/" className="text-purple-700 underline">corrections policy</Link>{" "}
+        page, including how we triage SSA OACT upstream errors versus interpretation-layer bugs
+        and how we forward SSA OACT-level concerns to SSA OACT directly.
+      </p>
+
+      <AuthorBox />
     </article>
   );
 }

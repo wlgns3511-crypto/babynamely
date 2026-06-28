@@ -29,8 +29,8 @@ export default function ComparePage() {
         <h1 className="text-3xl font-bold text-slate-900 mb-3">Compare Baby Names</h1>
         <p className="text-slate-600 leading-relaxed">
           Side-by-side comparisons covering meanings, origins, peak popularity, decade-by-decade
-          trajectory, and sibling-pair workability. Every pairing is backed by Social Security
-          Administration data — no fabricated trends, no ranked listicles, no editorial fluff.
+          trajectory, and sibling-pair workability. Every pairing is backed by the SSA OACT
+          baby-name record and resolves to a real entry in that record.
         </p>
       </header>
 
