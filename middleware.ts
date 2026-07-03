@@ -1,11 +1,13 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import compareKeepList from './lib/generated/compare-keep.json';
+import nameKeepList from './lib/generated/name-keep.json';
 
-// Prebuilt O(1) lookup set — dumped at build time by scripts/build-keep-sets.ts
-// so Edge Runtime middleware never touches SQLite. Canonical slugs only
-// (halves sorted a < b, single-dash `-vs-` join).
+// Prebuilt O(1) lookup sets — dumped at build time by scripts/build-keep-sets.ts
+// so Edge Runtime middleware never touches SQLite. Compare slugs are canonical
+// (halves sorted a < b, single-dash `-vs-` join); name slugs are plain.
 const COMPARE_KEEP_SET: Set<string> = new Set(compareKeepList as string[]);
+const NAME_KEEP_SET: Set<string> = new Set(nameKeepList as string[]);
 
 /**
  * HCU 2026-04-24 cleanup — 410 Gone for pruned /compare/ URLs.
@@ -16,8 +18,14 @@ const COMPARE_KEEP_SET: Set<string> = new Set(compareKeepList as string[]);
  * cache for months. 410 instead of notFound()'s 404 signals intentional
  * deletion → faster deindex.
  *
- * /middle-names/ and /name/ routes INTENTIONALLY untouched — both prerender
- * all 6,782 names (top traffic category at ~80% of 28d clicks).
+ * /middle-names/ INTENTIONALLY untouched — prerenders all names
+ * (MIDDLE_NAME_PRERENDER_LIMIT=999999, ~50% of 28d clicks).
+ *
+ * /name/ pruned 2026-06-28 to top-1500 by peak_pct (HCU defense) — but that
+ * commit shipped without tombstones, so 6,267 dropped names served 404 until
+ * 2026-07-03, when NAME_KEEP_SET (top-1500 ∪ Bing evidence) + the 410 clause
+ * below landed. Covers /name/<slug>/ and /name/<slug>/by-decade/ (by-decade
+ * prerenders top-100 ⊂ keep-set, so the slug check alone is sufficient).
  *
  * Name slugs are single-word (no internal dashes) so the first -vs- split is
  * the canonical separator, but we still iterate all positions for robustness
@@ -44,6 +52,14 @@ export function middleware(request: NextRequest) {
   // 410 for fast deindex. Matches portfolio-wide /es/ kill pattern.
   if (pathname === '/es' || pathname === '/es/' || pathname.startsWith('/es/')) {
     return new NextResponse('Gone', { status: 410 });
+  }
+
+  // /name/<slug>/ and /name/<slug>/by-decade/ — 410 if slug not in keep-set
+  if (pathname.startsWith('/name/')) {
+    const slug = pathname.slice(6).replace(/\/$/, '').split('/')[0];
+    if (slug && !NAME_KEEP_SET.has(slug)) {
+      return new NextResponse('Gone', { status: 410 });
+    }
   }
 
   // /compare/<slugs>/ — 410 if not in keep-set (either ordering)

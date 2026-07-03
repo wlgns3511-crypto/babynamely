@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Database from "better-sqlite3";
 import path from "path";
-import { getNameBySlug, getNameSlugsPage, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getStaticComparisonHref, getStaticComparisonsForSlug, getNameStats, getNameRank, getLatestPopularity, getNamePeers } from "@/lib/db";
+import { getNameBySlug, getStaticNameSlugs, getPopularity, getSimilarNames, getPopularNamesByGender, getNamesBySameOrigin, getStaticComparisonHref, getStaticComparisonsForSlug, getNameStats, getNameRank, getLatestPopularity, getNamePeers } from "@/lib/db";
 import { formatPct, genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema, nameDatasetSchema } from "@/lib/schema";
 import { ANALYSIS_VINTAGE } from "@/lib/authorship";
@@ -204,7 +204,11 @@ function ReaderHelpHub({ items }: { items: Array<{ title: string; help: NameRead
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  return getNameSlugsPage(0, 1500);
+  // HCU 2026-07-03: keep-set JSON is the source of truth (top-1500 by
+  // peak_pct ∪ Bing-evidence union) — shared with middleware.ts 410 and
+  // build-sitemap.ts so the three can never drift. Was getNameSlugsPage(0,
+  // 1500) (2026-06-28 prune), which shipped without tombstones → 6,267 404s.
+  return getStaticNameSlugs();
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

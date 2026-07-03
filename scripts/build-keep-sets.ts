@@ -10,7 +10,11 @@
  *
  * /middle-names/ left ALONE (MIDDLE_NAME_PRERENDER_LIMIT=999999 → all 6,782
  * names prerender; that's ~50% of 28d clicks, must stay).
- * /name/ left ALONE (all 6,782 names prerender, top earner category).
+ *
+ * 2026-07-03: also emits name-keep.json — /name/ pruned to top-1500 by
+ * peak_pct (2026-06-28 HCU defense) ∪ Bing-evidence names. Consumed by
+ * middleware.ts (410 outside set), lib/db.ts::getStaticNameSlugs()
+ * (generateStaticParams), and scripts/build-sitemap.ts.
  *
  * GSC evidence override (2026-03-24 ~ 2026-04-21):
  *   Verified via DB popularity_score query:
@@ -23,7 +27,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { getTopComparisons, getNameBySlug } from '../lib/db';
+import { getTopComparisons, getNameBySlug, getNameSlugsPage } from '../lib/db';
 
 const COMPARE_CAP = 100;
 
@@ -118,4 +122,31 @@ fs.writeFileSync(path.join(OUT_DIR, 'compare-keep.json'), JSON.stringify(compare
 
 console.log(
   `✓ compare-keep.json: ${compareKeep.length} compares (${base.length} base + ${gscAdded} GSC + ${bingAdded} Bing, ${gscSkipped + bingSkipped} skipped)`,
+);
+
+// ─── name-keep.json — 2026-07-03 ─────────────────────────────────────────
+// The 2026-06-28 HCU prune capped /name/ at getNameSlugsPage(0, 1500) but
+// shipped without a keep-set → 6,267 dropped names served 404 (convention
+// says 410). Base cohort = the page's exact query (peak_pct DESC LIMIT
+// 1500), unioned with Bing-evidence names so the cut never kills an earner
+// (same rationale as the compare GSC union above).
+const nameBase = getNameSlugsPage(0, 1500).map((n) => n.slug);
+const nameSet = new Set<string>(nameBase);
+
+const nameBingRaw = loadBingSlugs(/^\/name\/([^/]+)\/?$/);
+let nameBingAdded = 0;
+let nameBingSkipped = 0;
+for (const slug of nameBingRaw) {
+  if (!getNameBySlug(slug)) { nameBingSkipped++; continue; }
+  if (!nameSet.has(slug)) {
+    nameSet.add(slug);
+    nameBingAdded++;
+  }
+}
+
+const nameKeep = Array.from(nameSet).sort();
+fs.writeFileSync(path.join(OUT_DIR, 'name-keep.json'), JSON.stringify(nameKeep));
+
+console.log(
+  `✓ name-keep.json: ${nameKeep.length} names (${nameBase.length} base + ${nameBingAdded} Bing, ${nameBingSkipped} skipped)`,
 );

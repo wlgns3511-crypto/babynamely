@@ -252,6 +252,22 @@ export function getNameSlugsPage(offset: number, limit: number): { slug: string 
   return getDb().prepare('SELECT slug FROM names ORDER BY peak_pct DESC, name ASC LIMIT ? OFFSET ?').all(limit, offset) as { slug: string }[];
 }
 
+let _staticNameSlugs: { slug: string }[] | null = null;
+
+// HCU 2026-07-03: source of truth = scripts/build-keep-sets.ts JSON dump
+// (top-1500 by peak_pct ∪ Bing-evidence union), shared with middleware.ts
+// (410 outside set) and scripts/build-sitemap.ts — same three-consumer
+// pattern as compare-keep.json above. Rebuild via
+// `npx tsx scripts/build-keep-sets.ts` before deploy.
+export function getStaticNameSlugs(): { slug: string }[] {
+  if (!_staticNameSlugs) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const keepList = require('./generated/name-keep.json') as string[];
+    _staticNameSlugs = keepList.map((slug) => ({ slug }));
+  }
+  return _staticNameSlugs;
+}
+
 export function getPopularBoyNames(limit = 10): BabyName[] {
   return getDb().prepare('SELECT * FROM names WHERE gender = ? ORDER BY peak_pct DESC LIMIT ?').all('boy', limit) as BabyName[];
 }

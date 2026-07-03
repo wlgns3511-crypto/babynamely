@@ -26,7 +26,7 @@ import {
   countNames,
   getAllOrigins,
   getAvailableYears,
-  getNameSlugsPage,
+  getStaticNameSlugs,
 } from '../lib/db';
 import { getAllStates } from '../lib/states-data';
 import { getAllInsightArticles } from '../lib/insight-articles';
@@ -150,9 +150,11 @@ for (const year of selectedYears) {
   add({ url: `${SITE_URL}/names/year/${year}/`, lastmod: entityLastmod(`year-${year}`), priority: '0.6', changefreq: 'monthly' });
 }
 
-// Name pages (pruned to top 1500 by peak_pct for HCU defense)
+// Name pages — keep-set JSON (top-1500 by peak_pct ∪ Bing evidence),
+// shared with page generateStaticParams + middleware 410 (HCU 2026-07-03;
+// the 2026-06-28 top-1500 prune shipped without tombstones → 6,267 404s).
 // /es/name/ × 6,782 DROPPED 2026-04-22 — thin Spanish translation.
-for (const n of getNameSlugsPage(0, 1500)) {
+for (const n of getStaticNameSlugs()) {
   add({ url: `${SITE_URL}/name/${n.slug}/`, lastmod: entityLastmod(`name-${n.slug}`), priority: '0.7', changefreq: 'monthly' });
 }
 
