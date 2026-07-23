@@ -5,7 +5,6 @@ import { genderColor, genderBg } from "@/lib/format";
 import { breadcrumbSchema, faqSchema } from "@/lib/schema";
 import { TrustBlock } from "@/components/upgrades/TrustBlock";
 import { InsightBlock } from "@/components/upgrades/InsightBlock";
-import { LivePoll } from '@/components/upgrades/LivePoll';
 import { FeedbackButton } from '@/components/upgrades/FeedbackButton';
 import { TableOfContents } from "@/components/upgrades/TableOfContents";
 import { RelatedEntities } from "@/components/upgrades/RelatedEntities";
@@ -145,8 +144,6 @@ export default async function MiddleNamesPage({ params }: Props) {
       <TableOfContents />
 
       <InsightBlock entityName={firstName.name} heading="Phonetic & Origin Key Insights" insights={insights} />
-      <LivePoll entityName={firstName.name} />
-
       {/* Middle Name Suggestions */}
       <h2 id="middle-name-suggestions" className="text-xl font-bold mb-4 text-slate-900">Popular Middle Name Pairings</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
