@@ -2,7 +2,6 @@
  * Auto-generated FAQs for name pages using real SSA data values.
  */
 import { formatPct } from './format';
-import { getProprietaryNameMetrics } from './proprietary-metrics';
 
 export interface FAQItem {
   question: string;
@@ -59,12 +58,16 @@ export function generateAutoFAQs(
     });
   }
 
-  // 3. Rarity & Style Grade FAQ
-  const { rarityScore, harmonyScore, styleGrade } = getProprietaryNameMetrics(n);
-  const rarityVerdict = rarityScore >= 70 ? "relatively rare and unique" : "common and widely recognized";
+  // 3. Popularity FAQ — direct SSA values only, with no invented rarity/style score.
+  const rankText = rank
+    ? `${name} ranks #${rank} among ${stats.totalNames.toLocaleString()} names in this dataset when ordered by peak share.`
+    : `${name} does not have enough SSA peak-share data for a dataset rank.`;
+  const latestText = latestPop
+    ? `In ${latestPop.year}, it represented ${formatPct(latestPop.pct)} of recorded births for that gender.`
+    : 'A recent-year SSA share is not available in the current dataset.';
   faqs.push({
     question: `Is the name ${name} rare or popular?`,
-    answer: `According to our proprietary index, the name ${name} has a rarity score of ${rarityScore}/100 and is considered ${rarityVerdict}. It has a phonetic harmony score of ${harmonyScore}/100 and holds a Name Style Grade of ${styleGrade}.`,
+    answer: `${rankText} ${latestText}`,
   });
 
   // 4. Sibling & Middle Name Pairings

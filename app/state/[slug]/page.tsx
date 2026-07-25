@@ -4,11 +4,13 @@ import { notFound } from 'next/navigation';
 import { getAllStates, getStateBySlug } from '@/lib/states-data';
 import { getStateInsight } from '@/lib/state-insights';
 import { breadcrumbSchema, stateDatasetSchema } from '@/lib/schema';
-import { getStateBackedRowCount } from '@/lib/state-heatmap';
+import { getStateRoster } from '@/lib/roster';
+import { NameRoster } from '@/components/NameRoster';
 import { StateRich } from '@/components/state/StateRich';
 import { AuthorBox } from '@/components/AuthorBox';
 import { StateHeroImage } from '@/components/StateHeroImage';
 import { getStateImageByName } from '@/lib/state-images';
+import { isIndexableNameSlug } from '@/lib/index-status';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -53,7 +55,9 @@ export default async function StatePage({ params }: Props) {
     { name: state.name, url: `/state/${slug}/` },
   ];
 
-  const others = getAllStates().filter((s) => s.slug !== slug).slice(0, 6);
+  // 형제 주 전량 — .slice(0, 6) 이던 자리. 6개만 걸면 나머지 45개 주는 이 축에서
+  // 도달 불가였다(허브 한 장 경유만 가능).
+  const others = getAllStates().filter((s) => s.slug !== slug);
   const insight = getStateInsight(slug);
   const leanLabel: Record<NonNullable<ReturnType<typeof getStateInsight>>['vintageLean'], string> = {
     vintage_lean: 'Vintage-leaning',
@@ -61,7 +65,10 @@ export default async function StatePage({ params }: Props) {
     modern: 'Modern-leaning',
   };
 
-  const backedRowCount = getStateBackedRowCount(state.code);
+  // 로스터가 이 주의 state_name_total 전량이다. 페이지에 쓰는 행수는 별도 COUNT 가
+  // 아니라 렌더되는 배열에서만 파생한다(라벨≠계산 방지).
+  const roster = getStateRoster(state.code);
+  const backedRowCount = roster.total;
 
   return (
     <article className="max-w-4xl mx-auto">
@@ -162,7 +169,7 @@ export default async function StatePage({ params }: Props) {
                   r.slug ? (
                     <a
                       key={`${r.name}-${r.slug}`}
-                      href={`/name/${r.slug}/`}
+                      href={isIndexableNameSlug(r.slug) ? `/name/${r.slug}/` : `/lookup/${r.slug}/`}
                       className="text-xs px-2.5 py-1 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition"
                     >
                       <span className="font-medium text-slate-800">{r.name}</span>
@@ -193,7 +200,7 @@ export default async function StatePage({ params }: Props) {
                     r.slug ? (
                       <a
                         key={`${r.name}-${r.slug}`}
-                        href={`/name/${r.slug}/`}
+                        href={isIndexableNameSlug(r.slug) ? `/name/${r.slug}/` : `/lookup/${r.slug}/`}
                         className="text-xs px-2.5 py-1 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition"
                       >
                         <span className="font-medium text-slate-800">{r.name}</span>
@@ -209,12 +216,13 @@ export default async function StatePage({ params }: Props) {
 
       <div className="grid md:grid-cols-2 gap-6 mb-10">
         <section>
-          <h2 className="text-xl font-bold text-blue-700 mb-3">Top 10 Boy Names in {state.name}</h2>
+          <h2 className="text-xl font-bold text-blue-700 mb-1">Top 10 Boy Names in {state.name}</h2>
+          <p className="text-xs text-slate-500 mb-3">Ranked by births in the 2020–2024 window of the SSA {state.code} state file.</p>
           <div className="border border-slate-200 rounded-lg overflow-hidden">
             {state.popularBoys.map((name, i) => (
               <a
                 key={name}
-                href={`/name/${name.toLowerCase()}/`}
+                href={isIndexableNameSlug(name.toLowerCase()) ? `/name/${name.toLowerCase()}/` : `/lookup/${name.toLowerCase()}/`}
                 className="flex items-center p-3 hover:bg-blue-50 border-b border-slate-100 last:border-b-0"
               >
                 <span className="text-slate-400 w-8 text-sm">{i + 1}.</span>
@@ -225,12 +233,13 @@ export default async function StatePage({ params }: Props) {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-pink-700 mb-3">Top 10 Girl Names in {state.name}</h2>
+          <h2 className="text-xl font-bold text-pink-700 mb-1">Top 10 Girl Names in {state.name}</h2>
+          <p className="text-xs text-slate-500 mb-3">Ranked by births in the 2020–2024 window of the SSA {state.code} state file.</p>
           <div className="border border-slate-200 rounded-lg overflow-hidden">
             {state.popularGirls.map((name, i) => (
               <a
                 key={name}
-                href={`/name/${name.toLowerCase()}/`}
+                href={isIndexableNameSlug(name.toLowerCase()) ? `/name/${name.toLowerCase()}/` : `/lookup/${name.toLowerCase()}/`}
                 className="flex items-center p-3 hover:bg-pink-50 border-b border-slate-100 last:border-b-0"
               >
                 <span className="text-slate-400 w-8 text-sm">{i + 1}.</span>
@@ -240,6 +249,43 @@ export default async function StatePage({ params }: Props) {
           </div>
         </section>
       </div>
+
+      {/* 전량 로스터 — 이 주의 state_name_total 행 전부. 이전에는 상위 10개만 렌더돼
+          나머지가 어떤 페이지에도 안 나왔다(51개 주 합계 241,042행). */}
+      <section
+        data-upgrade="state-roster"
+        aria-label={`Every SSA-published name in ${state.name}`}
+        className="mb-10"
+      >
+        <h2 className="text-2xl font-bold text-slate-900 mb-1">
+          Every name the SSA publishes for {state.name}
+        </h2>
+        <p className="text-sm text-slate-600 mb-4">
+          All {backedRowCount.toLocaleString()} name records in the {state.code} state file &mdash;{' '}
+          {roster.boys.length.toLocaleString()} boy and {roster.girls.length.toLocaleString()} girl entries,
+          not just the top 10. <strong>Total births</strong> is the cumulative count across the whole
+          published series; <strong>2020&ndash;2024</strong> is the recent window that the top-10 lists
+          above are ranked by. The two orders differ, which is the point of showing both.
+        </p>
+        <div className="grid md:grid-cols-2 gap-6">
+          <NameRoster
+            rows={roster.boys}
+            gender="boy"
+            columns={['Total births', '2020–2024']}
+            caption={`${roster.boys.length.toLocaleString()} boy names · ${state.code} · SSA state file`}
+          />
+          <NameRoster
+            rows={roster.girls}
+            gender="girl"
+            columns={['Total births', '2020–2024']}
+            caption={`${roster.girls.length.toLocaleString()} girl names · ${state.code} · SSA state file`}
+          />
+        </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Names shown as plain text have no individual page on this site &mdash; their state counts live
+          here and in the national year tables. Sorted by cumulative births, then alphabetically.
+        </p>
+      </section>
 
       <section
         data-upgrade="state-interpretation"
@@ -253,7 +299,7 @@ export default async function StatePage({ params }: Props) {
           <div>
             <h3 className="font-semibold text-slate-900 mb-1">What the {state.name} top-10 actually tells you</h3>
             <p>
-              The list above is computed from SSA state-file <code>state_name_total</code> rows ({backedRowCount.toLocaleString()} (name, year) records for {state.code}). It reflects the cumulative count over the available state series, not just the latest year. A name in the top 10 here does not necessarily mean it&rsquo;s the most popular <em>this year</em> — only that it has accumulated the most births given to {state.code} babies across the dataset.
+              Both lists are computed from the same {backedRowCount.toLocaleString()} SSA state-file rows for {state.code}, but over different windows. The <strong>top 10</strong> ranks by births in 2020&ndash;2024, so it answers &ldquo;what are {state.code} parents naming babies now.&rdquo; The <strong>full roster</strong> is ordered by cumulative births across the entire published series, which pulls up names that were dominant decades ago and have since faded. A name high in one and absent from the other is the normal case, not an error — and neither ranking is the same as the single latest year.
             </p>
           </div>
           <div>
@@ -271,7 +317,7 @@ export default async function StatePage({ params }: Props) {
           <div>
             <h3 className="font-semibold text-slate-900 mb-1">Practical example</h3>
             <p>
-              If you are choosing a baby name in {state.name} and want to predict your child&rsquo;s classroom-name overlap, the cumulative top 10 here is a better anchor than the latest-year top 10 — naming preferences in your child&rsquo;s peer cohort are mostly set by parents who chose names 0–4 years ago, not in the single year of birth. Cross-reference with the &ldquo;by decade&rdquo; deep-dive linked above for finer time slicing.
+              If you are choosing a baby name in {state.name} and want to predict your child&rsquo;s classroom-name overlap, the 2020&ndash;2024 top 10 is the right anchor — a peer cohort&rsquo;s names were set by parents choosing 0&ndash;4 years ago, not in the single year of birth. Use the cumulative roster for the opposite question: which names {state.name} has used heavily over generations, including ones that have already fallen out of the recent window. Cross-reference with the &ldquo;by decade&rdquo; deep-dive linked above for finer time slicing.
             </p>
           </div>
         </div>

@@ -51,11 +51,8 @@ import {
   type NameReaderHelp,
 } from '@/lib/hub-reader-help';
 import { InterpretationStrip } from '@/components/upgrades/InterpretationStrip';
-import { getAllGuides } from "@/lib/guides";
 import { classifyCrosswalkName, nameCrosswalkTitleTag, nameVariableMeasured } from '@/lib/crosswalk-nameblooms';
 import { MiddleNameCalculator } from "@/components/MiddleNameCalculator";
-import { getProprietaryNameMetrics } from "@/lib/proprietary-metrics";
-import { ProprietaryMetricsBlock } from "@/components/upgrades/ProprietaryMetricsBlock";
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -237,13 +234,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const originBit = n.origin ? `${n.origin} origin` : '';
     const meaningBit = n.meaning ? `means "${n.meaning.slice(0, 40)}"` : '';
     const fact = [originBit, meaningBit].filter(Boolean).join(', ');
-    const { rarityScore, styleGrade } = getProprietaryNameMetrics(n);
     title = `${n.name}: #${rank} of ${total} ${n.gender === 'boy' ? 'Boy' : n.gender === 'girl' ? 'Girl' : ''} Names · Peak ${n.peak_year ?? ''}`.trim();
-    description = `[Rarity: ${rarityScore}/100, Style Grade: ${styleGrade}] ${n.name} ranks #${rank} of ${total} ${genderLabel} by peak popularity (${(n.peak_pct * 100).toFixed(2)}% in ${n.peak_year ?? 'peak year'}). ${fact}.${peerStr} SSA data through 2023.`;
+    description = `${n.name} ranks #${rank} of ${total} ${genderLabel} by peak popularity (${(n.peak_pct * 100).toFixed(2)}% in ${n.peak_year ?? 'peak year'}). ${fact}.${peerStr} SSA data through 2023.`;
   } else {
-    const { rarityScore, styleGrade } = getProprietaryNameMetrics(n);
     title = `${n.name}: Meaning, Origin & Popularity`;
-    description = `[Rarity: ${rarityScore}/100, Style Grade: ${styleGrade}] ${n.name} is a ${n.gender} name${n.origin ? ` of ${n.origin} origin` : ''}${n.meaning ? ` meaning "${n.meaning}"` : ''}. Popularity trends since 1880, cultural context, similar names. SSA data through 2023.`;
+    description = `${n.name} is a ${n.gender} name${n.origin ? ` of ${n.origin} origin` : ''}${n.meaning ? ` meaning "${n.meaning}"` : ''}. Popularity trends since 1880, cultural context, similar names. SSA data through 2023.`;
   }
   // Phase 7 P1 (§3.3 crosswalk): surface verdict + archetype tier in title.
   // title.absolute bypasses the ` | NameBlooms` 13c suffix from layout.tsx so
@@ -264,8 +259,6 @@ export default async function NamePage({ params }: Props) {
   const { slug } = await params;
   const n = getNameBySlug(slug);
   if (!n) notFound();
-
-  const { rarityScore, harmonyScore, styleGrade, commentary: proprietaryCommentary } = getProprietaryNameMetrics(n);
 
   const popularity = getPopularity(slug);
   const similar = getSimilarNames(slug, n.gender, 12);
@@ -486,13 +479,6 @@ export default async function NamePage({ params }: Props) {
       {/* Layer 1+2 — Live SSA snapshot with fact-bound commentary
           (2026-04-28 AdSense low-value-content remediation). */}
       {facts && commentary ? <LiveStats name={n.name} facts={facts} commentary={commentary} /> : null}
-
-      <ProprietaryMetricsBlock
-        rarityScore={rarityScore}
-        harmonyScore={harmonyScore}
-        styleGrade={styleGrade}
-        commentary={proprietaryCommentary}
-      />
 
       {/* Phase A — SSA per-state heatmap (2026-05-03 thin-site escape).
           Real per-state×year data from SSA SOOC namesbystate.zip. Each name
@@ -825,17 +811,6 @@ export default async function NamePage({ params }: Props) {
           </section>
         );
       })()}
-
-      {/* Related Guides — evictionlawpeek HCU revival pattern 2026-04-24.
-          4 evergreen long-form guides as canonical internal-link destinations.
-          Reinforces topical authority (data-source, trends, science-of-naming)
-          adjacent to the name entity — not thin or scaled. */}
-      <section className="mt-10 mb-10">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Related Guides</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          
-        </div>
-      </section>
 
       {/* DecisionNext — 3 opinionated next steps.
           2026-04-28: Removed middle-names card (was first slot). /middle-names/*

@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "site": "nameblooms",
+  "policy": "route-source-fingerprint",
+  "generated_at": "2026-07-26T01:38:40+09:00",
+  "routes": {
+    "/": {
+      "fingerprint": "037883ca360507fa744966a2f7393be5eab4995f8fa03b0110c1cfe2baaba381",
+      "lastmod": "2026-07-26",
+      "source_count": 22
+    },
+    "/about": {
+      "fingerprint": "19e49f20e416292cc46b5623ef734917b760264e0b84692221e7fac256f7a618",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/compare": {
+      "fingerprint": "d48d405003eba0ed9e5d64b7399c91c418b0804b4c3178e9355139751c51a9ec",
+      "lastmod": "2026-07-26",
+      "source_count": 17
+    },
+    "/compare/[slugs]": {
+      "fingerprint": "0e3dbf5f989206eb75380ecd44865a12bb5880f2b71c6a62894480e0a8a20efb",
+      "lastmod": "2026-07-26",
+      "source_count": 19
+    },
+    "/contact": {
+      "fingerprint": "5dd5b5d1a556add1f2ebab2b06b4f18790a3304c601112d195aa229ce172fbb8",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/corrections-policy": {
+      "fingerprint": "056ee69f0ed0b1405709d047f5f18c2c9a48df2a140604abefb4b19864d92a6d",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/daily": {
+      "fingerprint": "24d8d1a6d39567d195043fda07ee94ed5c8656393e431e32eedc3298a5bff51f",
+      "lastmod": "2026-07-24",
+      "source_count": 8
+    },
+    "/daily/[date]": {
+      "fingerprint": "d711c2d0885f4af4e9718f245f4ed7077b5b1ed5d66181a2706b91b710e0b61a",
+      "lastmod": "2026-07-24",
+      "source_count": 8
+    },
+    "/disclaimer": {
+      "fingerprint": "60bd3630e0df596eb79a5bdd04eb591ff3266553f5bed4899bc143ab41fece64",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/editorial-policy": {
+      "fingerprint": "0ff49a52c7c5609ecf57f0d55987baf3cb4ee5975bbaf815f87dfb48090190a3",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/embed/name-predictor": {
+      "fingerprint": "30939c95b961451a11c5ddb9c1599bfe0473542be54a6acc450681b5c7f786ab",
+      "lastmod": "2026-07-24",
+      "source_count": 8
+    },
+    "/insights": {
+      "fingerprint": "5950f7322f2fe0baa835bfed7137e6416b1b2626da53bc1708d5649a2cf6c5d8",
+      "lastmod": "2026-07-24",
+      "source_count": 10
+    },
+    "/insights/[slug]": {
+      "fingerprint": "ada84d9af2b3b5f69073045511e2009e9cd22f8c51075b1216f5b73817b2a157",
+      "lastmod": "2026-07-24",
+      "source_count": 8
+    },
+    "/lookup/[slug]": {
+      "fingerprint": "c7de124f98ba95d9ea368a415b57ce18345a125e8ab0e4c510240e7f4fd35521",
+      "lastmod": "2026-07-26",
+      "source_count": 15
+    },
+    "/methodology": {
+      "fingerprint": "3f99b63911dd11888daaa71970a34e8ad61f63d910a54d34507580092a5d5a58",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/middle-names/[slug]": {
+      "fingerprint": "55e59b3562bf5979c79a0bf545ce17973472629d5a557c17c6d3ac87de3e1dd8",
+      "lastmod": "2026-07-26",
+      "source_count": 26
+    },
+    "/name/[slug]": {
+      "fingerprint": "b06b0b810790e534174d9f4ca52c2539387e3f12c3ef5fd57739c3f2ac77b91d",
+      "lastmod": "2026-07-26",
+      "source_count": 56
+    },
+    "/name/[slug]/by-decade": {
+      "fingerprint": "c40282d734cb27a1643ad6734dc0023a2e14f275f26d2ead21633f8310e05d25",
+      "lastmod": "2026-07-26",
+      "source_count": 24
+    },
+    "/names/gender/[gender]": {
+      "fingerprint": "fee7b998d679a86d44b230a851c11415dc69eeff587cd3417924cd2d0db3769a",
+      "lastmod": "2026-07-26",
+      "source_count": 17
+    },
+    "/names/letter/[letter]": {
+      "fingerprint": "668afd706eef6347b83fdbf758f257d2a43785d36a931798460797f55e4fcfab",
+      "lastmod": "2026-07-26",
+      "source_count": 17
+    },
+    "/names/origin/[origin]": {
+      "fingerprint": "97244c1c1d9b67113ea2adc8db9cb6d94d2fa19166db628e13e9f892fda58b9e",
+      "lastmod": "2026-07-26",
+      "source_count": 17
+    },
+    "/names/year/[year]": {
+      "fingerprint": "2ba986ba21a8940d67a8a54c7fff08616a869b5c0886aa4be4cfec88b460871f",
+      "lastmod": "2026-07-26",
+      "source_count": 21
+    },
+    "/privacy": {
+      "fingerprint": "f0d5bf5c6067d22e1770fa2a2f8b0c3d003bf043d4953990ec4e45a0eb1ffe86",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/search": {
+      "fingerprint": "333a99f1fd78c8baeb7419cdcad3366ec22e9135324eca90da56cba113a52f39",
+      "lastmod": "2026-07-26",
+      "source_count": 15
+    },
+    "/state": {
+      "fingerprint": "ae59b30b50aaf08778060f6315ab3964a101cf05f9df64fb1e695de1c03125a2",
+      "lastmod": "2026-07-26",
+      "source_count": 10
+    },
+    "/state/[slug]": {
+      "fingerprint": "43aa49be0b82dceed51544da8b6c706551354b3a3d69b1c226cc4cf7fc7afdfb",
+      "lastmod": "2026-07-26",
+      "source_count": 25
+    },
+    "/state/[slug]/top-names-by-decade": {
+      "fingerprint": "c3208ee673ba5fb22f14ab02ba8879135ff3697853524239c5cfd51d42cc08ed",
+      "lastmod": "2026-07-26",
+      "source_count": 22
+    },
+    "/terms": {
+      "fingerprint": "db1c1be67b703149ed66d78d23e69a1f9299ff9092c5548f4dffc39470824d4e",
+      "lastmod": "2026-07-24",
+      "source_count": 9
+    },
+    "/trajectory": {
+      "fingerprint": "3ab1488109c9cffd927a6b75d49c49b2f9454f73692bab379add8791dbd0602f",
+      "lastmod": "2026-07-26",
+      "source_count": 16
+    },
+    "/trajectory/[archetype]": {
+      "fingerprint": "0e014c9adce24b1f7715610cfd37e8949427e0d5e269f79d0e62a3bc9f84731b",
+      "lastmod": "2026-07-26",
+      "source_count": 17
+    }
+  }
+}

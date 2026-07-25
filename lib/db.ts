@@ -3,6 +3,29 @@ import path from 'path';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'names.db');
 let _db: Database.Database | null = null;
+let _nameKeepSet: Set<string> | null = null;
+let _keptNames: BabyName[] | null = null;
+
+function getNameKeepSet(): Set<string> {
+  if (!_nameKeepSet) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    _nameKeepSet = new Set(require('./generated/name-keep.json') as string[]);
+  }
+  return _nameKeepSet;
+}
+
+function getKeptNames(): BabyName[] {
+  if (!_keptNames) {
+    _keptNames = [...getNameKeepSet()]
+      .map((slug) => getNameBySlug(slug))
+      .filter((name): name is BabyName => name != null);
+  }
+  return _keptNames;
+}
+
+function byPeakPctDesc(a: BabyName, b: BabyName): number {
+  return (b.peak_pct ?? 0) - (a.peak_pct ?? 0);
+}
 
 function getDb(): Database.Database {
   if (_db) {
@@ -43,7 +66,6 @@ export interface ComparisonPair {
 }
 
 export const COMPARISON_PRERENDER_LIMIT = 100;
-export const MIDDLE_NAME_PRERENDER_LIMIT = 999999;
 
 // --- Name queries ---
 
@@ -52,25 +74,21 @@ export function getNameBySlug(slug: string): BabyName | undefined {
 }
 
 export function getAllNames(): BabyName[] {
-  return getDb().prepare('SELECT * FROM names ORDER BY name').all() as BabyName[];
+  return [...getKeptNames()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getPopularNames(gender: string, limit = 50): BabyName[] {
-  return getDb().prepare(`
-    SELECT * FROM names WHERE gender = ? ORDER BY peak_pct DESC LIMIT ?
-  `).all(gender, limit) as BabyName[];
+  return getKeptNames().filter((name) => name.gender === gender).sort(byPeakPctDesc).slice(0, limit);
 }
 
 export function getNamesByLetter(letter: string): BabyName[] {
-  return getDb().prepare(`
-    SELECT * FROM names WHERE slug LIKE ? ORDER BY peak_pct DESC
-  `).all(letter.toLowerCase() + '%') as BabyName[];
+  return getKeptNames()
+    .filter((name) => name.slug.startsWith(letter.toLowerCase()))
+    .sort(byPeakPctDesc);
 }
 
 export function getNamesByOrigin(origin: string): BabyName[] {
-  return getDb().prepare(`
-    SELECT * FROM names WHERE origin = ? ORDER BY peak_pct DESC
-  `).all(origin) as BabyName[];
+  return getKeptNames().filter((name) => name.origin === origin).sort(byPeakPctDesc);
 }
 
 export function getAllOrigins(): string[] {
@@ -88,32 +106,20 @@ export function getPopularity(slug: string): PopularityRow[] {
   `).all(slug) as PopularityRow[];
 }
 
-export function getTopNamesForYear(year: number, limit = 20): (BabyName & { year_pct: number })[] {
-  return getDb().prepare(`
-    SELECT n.*, p.pct as year_pct FROM names n
-    JOIN popularity p ON n.slug = p.slug
-    WHERE p.year = ?
-    ORDER BY p.pct DESC LIMIT ?
-  `).all(year, limit) as (BabyName & { year_pct: number })[];
-}
-
-export function getAvailableYears(): number[] {
-  const rows = getDb().prepare(`
-    SELECT DISTINCT year FROM popularity ORDER BY year
-  `).all() as { year: number }[];
-  return rows.map(r => r.year);
-}
+// getTopNamesForYear() / getAvailableYears() 삭제 2026-07-26.
+// 연도 페이지는 lib/roster.ts 의 getYearRoster()/getRosterYears() 를 쓴다.
+// 전자는 keep-set 교집합 후 top-N 절단이라, 그 해 순위가 붙은 이름의 대부분을
+// 페이지에서 지우고 있었다(2024년 5,925 → 50). 되살려 쓰지 말 것.
 
 // --- Similar names ---
 
 export function getSimilarNames(slug: string, gender: string, limit = 10): BabyName[] {
   // Names with similar starting letters and same gender
   const prefix = slug.substring(0, 3);
-  return getDb().prepare(`
-    SELECT * FROM names
-    WHERE gender = ? AND slug != ? AND slug LIKE ?
-    ORDER BY peak_pct DESC LIMIT ?
-  `).all(gender, slug, prefix + '%', limit) as BabyName[];
+  return getKeptNames()
+    .filter((name) => name.gender === gender && name.slug !== slug && name.slug.startsWith(prefix))
+    .sort(byPeakPctDesc)
+    .slice(0, limit);
 }
 
 // --- Comparisons ---
@@ -226,20 +232,75 @@ export function getStaticComparisonsForSlug(slug: string, limit = 12): Compariso
 }
 
 // --- Middle names ---
+//
+// 2026-07-24 재건. 옛 로직은 "성별당 peak_pct top-20 을 그대로" 반환해서 first name 이
+// 뭐든 리스트가 사실상 동일했다(kaitlyn≡elaine Jaccard 1.00) — 1,513 페이지가 실질 2종인
+// 도어웨이라 애드센스 scaled-content 로 죽었다. 이제 first name 자체의 속성으로 점수를 매겨
+// 리스트가 실제로 달라진다(데모: 동성별 쌍 Jaccard 0.00):
+//   1) 리듬: 음절 수가 다르면(특히 ±1) 잘 흐른다 — first 의 음절 수에 의존
+//   2) 끝소리 충돌 회피: 미들이 first 의 마지막 글자로 시작하면 뭉갠다(Dean Nathan)
+//   3) 시대 조화: SSA peak_year 가 가까울수록 스타일이 어울린다 — first 의 연대에 의존
+//   4) 친숙도: 인기 이름을 작은 타이브레이커로만 (지배하지 않게)
+// prerender 는 수요(Bing)∩keep-set 상위 100 만(lib/generated/middle-names-keep.json,
+// 근거 ops/middle-names-410-snapshot.json). 나머지 슬러그는 미들웨어 410 유지.
 
-export function getMiddleNameSuggestions(firstName: BabyName, limit = 20): BabyName[] {
-  // Get popular names of same gender that pair well
-  // Avoid names starting with same letter for variety
-  const firstLetter = firstName.slug.charAt(0);
-  return getDb().prepare(`
-    SELECT * FROM names
-    WHERE gender = ? AND slug != ? AND slug NOT LIKE ?
-    ORDER BY peak_pct DESC LIMIT ?
-  `).all(firstName.gender, firstName.slug, firstLetter + '%', limit) as BabyName[];
+export function countSyllables(word: string): number {
+  word = word.toLowerCase().trim();
+  if (word.length <= 3) return 1;
+  word = word.replace(/(?:[^laeiouy]es|[^laeiouy]ed|[^laeiouy]e)$/, '');
+  word = word.replace(/^y/, '');
+  const matches = word.match(/[aeiouy]{1,2}/g);
+  return matches ? matches.length : 1;
 }
 
-export function getTopNamesForMiddleNames(limit = 3000): { slug: string }[] {
-  return getDb().prepare('SELECT slug FROM names ORDER BY peak_pct DESC LIMIT ?').all(limit) as { slug: string }[];
+function middleNamePairScore(first: BabyName, cand: BabyName): number {
+  const fs = countSyllables(first.name);
+  const cs = countSyllables(cand.name);
+  const rhythm = fs === cs ? -20 : Math.abs(fs - cs) === 1 ? 25 : 12;
+  const era =
+    first.peak_year && cand.peak_year
+      ? Math.max(0, 40 - Math.abs(first.peak_year - cand.peak_year) / 4)
+      : 0;
+  const familiar = (cand.peak_pct ?? 0) * 60; // peak_pct ≤~0.08 → ≤5, 순위 지배 못 하는 타이브레이커
+  return rhythm + era + familiar;
+}
+
+export function getMiddleNameSuggestions(firstName: BabyName, limit = 20): BabyName[] {
+  const firstLetter = firstName.slug.charAt(0);
+  const lastLetter = firstName.name.charAt(firstName.name.length - 1).toLowerCase();
+  return getKeptNames()
+    .filter(
+      (name) =>
+        name.gender === firstName.gender &&
+        name.slug !== firstName.slug &&
+        !name.slug.startsWith(firstLetter) && // 두운(같은 첫 글자) 회피
+        name.name.charAt(0).toLowerCase() !== lastLetter, // 끝소리 충돌 회피
+    )
+    .sort((a, b) => middleNamePairScore(firstName, b) - middleNamePairScore(firstName, a))
+    .slice(0, limit);
+}
+
+let _middleNameKeepSet: Set<string> | null = null;
+function getMiddleNameKeepSet(): Set<string> {
+  if (!_middleNameKeepSet) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    _middleNameKeepSet = new Set(require('./generated/middle-names-keep.json') as string[]);
+  }
+  return _middleNameKeepSet;
+}
+
+/** prerender 대상(수요∩keep 상위 100) — page generateStaticParams + 미들웨어 410 경계와 동일 세트 */
+export function getStaticMiddleNameSlugs(): { slug: string }[] {
+  return [...getMiddleNameKeepSet()].map((slug) => ({ slug }));
+}
+
+/** 재건된 미들네임 페이지끼리만 상호 링크(죽은 링크 방지 — 살아있는 100개 안에서만). */
+export function getRelatedMiddleNames(slug: string, gender: string, limit = 6): BabyName[] {
+  const set = getMiddleNameKeepSet();
+  return getKeptNames()
+    .filter((name) => set.has(name.slug) && name.gender === gender && name.slug !== slug)
+    .sort(byPeakPctDesc)
+    .slice(0, limit);
 }
 
 // --- Counts ---
@@ -269,28 +330,30 @@ export function getStaticNameSlugs(): { slug: string }[] {
 }
 
 export function getPopularBoyNames(limit = 10): BabyName[] {
-  return getDb().prepare('SELECT * FROM names WHERE gender = ? ORDER BY peak_pct DESC LIMIT ?').all('boy', limit) as BabyName[];
+  return getKeptNames().filter((name) => name.gender === 'boy').sort(byPeakPctDesc).slice(0, limit);
 }
 
 export function getPopularGirlNames(limit = 10): BabyName[] {
-  return getDb().prepare('SELECT * FROM names WHERE gender = ? ORDER BY peak_pct DESC LIMIT ?').all('girl', limit) as BabyName[];
+  return getKeptNames().filter((name) => name.gender === 'girl').sort(byPeakPctDesc).slice(0, limit);
 }
 
 export function getNamesBySameOrigin(slug: string, origin: string | null, gender: string, limit = 6): BabyName[] {
   if (!origin) return [];
-  return getDb().prepare(
-    'SELECT * FROM names WHERE origin = ? AND gender = ? AND slug != ? ORDER BY peak_pct DESC LIMIT ?'
-  ).all(origin, gender, slug, limit) as BabyName[];
+  return getKeptNames()
+    .filter((name) => name.origin === origin && name.gender === gender && name.slug !== slug)
+    .sort(byPeakPctDesc)
+    .slice(0, limit);
 }
 
 export function getPopularNamesByGender(gender: string, excludeSlug: string, limit = 6): BabyName[] {
-  return getDb().prepare(
-    'SELECT * FROM names WHERE gender = ? AND slug != ? ORDER BY peak_pct DESC LIMIT ?'
-  ).all(gender, excludeSlug, limit) as BabyName[];
+  return getKeptNames()
+    .filter((name) => name.gender === gender && name.slug !== excludeSlug)
+    .sort(byPeakPctDesc)
+    .slice(0, limit);
 }
 
 export function getRandomNames(limit = 20): BabyName[] {
-  return getDb().prepare('SELECT * FROM names ORDER BY RANDOM() LIMIT ?').all(limit) as BabyName[];
+  return [...getKeptNames()].sort(() => Math.random() - 0.5).slice(0, limit);
 }
 
 /** Get current ISO week number (1-52) */
@@ -322,12 +385,13 @@ export function getNameRank(slug: string): number | null {
 
 // Peer names by peak_pct (one higher, one lower), same gender. Used for metadata peer comparisons.
 export function getNamePeers(peakPct: number, gender: string, excludeSlug: string): { above?: BabyName; below?: BabyName } {
-  const above = getDb().prepare(
-    'SELECT * FROM names WHERE peak_pct > ? AND gender = ? AND slug != ? ORDER BY peak_pct ASC LIMIT 1'
-  ).get(peakPct, gender, excludeSlug) as BabyName | undefined;
-  const below = getDb().prepare(
-    'SELECT * FROM names WHERE peak_pct < ? AND gender = ? AND slug != ? ORDER BY peak_pct DESC LIMIT 1'
-  ).get(peakPct, gender, excludeSlug) as BabyName | undefined;
+  const candidates = getKeptNames().filter((name) => name.gender === gender && name.slug !== excludeSlug);
+  const above = candidates
+    .filter((name) => (name.peak_pct ?? 0) > peakPct)
+    .sort((a, b) => (a.peak_pct ?? 0) - (b.peak_pct ?? 0))[0];
+  const below = candidates
+    .filter((name) => (name.peak_pct ?? 0) < peakPct)
+    .sort(byPeakPctDesc)[0];
   return { above, below };
 }
 
@@ -367,7 +431,7 @@ export function getTopNamesForDecade(
   gender: "boy" | "girl",
   limit = 10
 ): DecadeTopRow[] {
-  return getDb()
+  const rows = getDb()
     .prepare(
       `SELECT n.slug, n.name, n.gender, n.origin, n.peak_year,
               SUM(p.pct) AS total_pct
@@ -375,10 +439,10 @@ export function getTopNamesForDecade(
        JOIN names n ON p.slug = n.slug
        WHERE p.year >= ? AND p.year < ? AND n.gender = ?
        GROUP BY n.slug
-       ORDER BY total_pct DESC
-       LIMIT ?`
+       ORDER BY total_pct DESC`
     )
-    .all(startYear, startYear + 10, gender, limit) as DecadeTopRow[];
+    .all(startYear, startYear + 10, gender) as DecadeTopRow[];
+  return rows.filter((name) => getNameKeepSet().has(name.slug)).slice(0, limit);
 }
 
 export function getRotatingComparisons(limit = 2000): ComparisonPair[] {

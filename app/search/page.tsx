@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { searchNames, getPopularBoyNames, getPopularGirlNames } from "@/lib/db";
+import { isIndexableNameSlug } from "@/lib/index-status";
 
 interface Props {
   searchParams: Promise<{ q?: string }>;
@@ -56,10 +57,12 @@ export default async function SearchPage({ searchParams }: Props) {
           </h2>
           {results.length > 0 ? (
             <div className="grid gap-3 sm:grid-cols-2">
-              {results.map((n) => (
+              {results.map((n) => {
+                const reviewed = isIndexableNameSlug(n.slug);
+                return (
                 <a
                   key={n.slug}
-                  href={`/name/${n.slug}/`}
+                  href={reviewed ? `/name/${n.slug}/` : `/lookup/${n.slug}/`}
                   className="block p-4 border border-slate-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-all"
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -77,8 +80,10 @@ export default async function SearchPage({ searchParams }: Props) {
                   {n.peak_year && (
                     <p className="text-xs text-slate-400 mt-1">Peak popularity: {n.peak_year}</p>
                   )}
+                  <p className="text-xs text-slate-400 mt-1">{reviewed ? "Expanded profile" : "Reference entry"}</p>
                 </a>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-6 bg-slate-50 rounded-lg text-center text-slate-500">
@@ -94,7 +99,7 @@ export default async function SearchPage({ searchParams }: Props) {
             <h2 className="text-lg font-semibold mb-3 text-slate-700">Popular Boy Names</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {popularBoy.map((n) => (
-                <a key={n.slug} href={`/name/${n.slug}/`} className="p-3 border border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all flex items-center gap-2">
+                <a key={n.slug} href={isIndexableNameSlug(n.slug) ? `/name/${n.slug}/` : `/lookup/${n.slug}/`} className="p-3 border border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all flex items-center gap-2">
                   <span className="font-medium text-slate-900">{n.name}</span>
                   {n.meaning && <span className="text-xs text-slate-400 truncate">{n.meaning}</span>}
                 </a>
@@ -105,7 +110,7 @@ export default async function SearchPage({ searchParams }: Props) {
             <h2 className="text-lg font-semibold mb-3 text-slate-700">Popular Girl Names</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {popularGirl.map((n) => (
-                <a key={n.slug} href={`/name/${n.slug}/`} className="p-3 border border-slate-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-all flex items-center gap-2">
+                <a key={n.slug} href={isIndexableNameSlug(n.slug) ? `/name/${n.slug}/` : `/lookup/${n.slug}/`} className="p-3 border border-slate-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-all flex items-center gap-2">
                   <span className="font-medium text-slate-900">{n.name}</span>
                   {n.meaning && <span className="text-xs text-slate-400 truncate">{n.meaning}</span>}
                 </a>

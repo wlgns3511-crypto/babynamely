@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { UpgradeAnalytics } from "@/components/upgrades/UpgradeAnalytics";
 import RelatedSites from "@/components/RelatedSites";
+import { DailyLatest } from "@/components/DailyLatest";
 
 // 2026-04-23 structural fix — do NOT reintroduce `headers()` in this layout.
 // Any dynamic API (headers, cookies, draftMode, searchParams) in the root
@@ -91,9 +92,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <UpgradeAnalytics />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-blue-600 focus:border focus:rounded">Skip to content</a>
         <header className="border-b border-slate-200">
-          <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <a href="/" className="text-xl font-bold text-purple-700">{SITE_NAME}</a>
-            <nav className="flex gap-4 text-sm">
+            <nav className="flex w-full gap-4 overflow-x-auto pb-1 text-sm sm:w-auto sm:pb-0">
               <a href="/names/gender/boy/" className="hover:text-blue-600">Boy Names</a>
               <a href="/names/gender/girl/" className="hover:text-pink-600">Girl Names</a>
               <a href="/compare/" className="hover:text-purple-600">Compare</a>
@@ -108,6 +109,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </header>
         <main id="main-content" className="flex-1 max-w-5xl mx-auto px-4 py-8 w-full">{children}</main>
+        <DailyLatest />
         <footer className="border-t border-slate-200 mt-16">
           <div className="max-w-5xl mx-auto px-4 py-6 text-sm text-slate-500">
             <p>Based on public records from the U.S. Social Security Administration (SSA) baby names database.</p>

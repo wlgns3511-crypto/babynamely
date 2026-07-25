@@ -2,12 +2,14 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import compareKeepList from './lib/generated/compare-keep.json';
 import nameKeepList from './lib/generated/name-keep.json';
+import middleNameKeepList from './lib/generated/middle-names-keep.json';
 
 // Prebuilt O(1) lookup sets — dumped at build time by scripts/build-keep-sets.ts
 // so Edge Runtime middleware never touches SQLite. Compare slugs are canonical
 // (halves sorted a < b, single-dash `-vs-` join); name slugs are plain.
 const COMPARE_KEEP_SET: Set<string> = new Set(compareKeepList as string[]);
 const NAME_KEEP_SET: Set<string> = new Set(nameKeepList as string[]);
+const MIDDLE_NAME_KEEP_SET: Set<string> = new Set(middleNameKeepList as string[]);
 
 /**
  * HCU 2026-04-24 cleanup — 410 Gone for pruned /compare/ URLs.
@@ -60,15 +62,17 @@ export function middleware(request: NextRequest) {
     return new NextResponse('Gone', { status: 410 });
   }
 
-  // /middle-names/* — 410 Gone (2026-07-24). 1,513 페이지가 살아있었지만
-  // "추천 중간이름 20개"가 emma·olivia 20/20 동일 — 성별당 SSA 전체기간 top-20 을
-  // 그대로 붙인 것이라 7,767 URL 이 실질 2종이었다. 2026-04-26 애드센스 위반 판정이
-  // 옳았다. robots.txt 의 Disallow 도 같이 걷는다: 크롤을 막아두면 빙이 재확인을
-  // 못 해 유령 색인이 안 죽는다(죽은 222개가 노출 469·클릭 66 을 404 로 흘리던 원인).
-  // 수요 자체는 진짜(CTR 14%)라 슬러그·수요는 ops/middle-names-410-snapshot.json 에
-  // 보존 — 실제 페어링 로직(음절·끝소리·연대·이니셜)으로 재건할 때 상위부터 쓴다.
+  // /middle-names/<slug>/ — 2026-07-24 재건. 옛 1,513 페이지는 성별당 SSA top-20 을
+  // 그대로 붙여 리스트가 first name 무관하게 동일한 도어웨이였다(애드센스 scaled-content
+  // 판정 옳았음). 이제 first name 의 음절·끝소리·연대로 점수를 매겨 리스트가 실제로 달라진
+  // 페이지를, 수요(Bing)∩keep 상위 100(MIDDLE_NAME_KEEP_SET)만 200 으로 서빙한다. 나머지
+  // 죽은 슬러그는 계속 410(/name/ 절과 같은 keep-set 경계 패턴). 근거·수요 스냅샷은
+  // ops/middle-names-410-snapshot.json.
   if (pathname === '/middle-names' || pathname.startsWith('/middle-names/')) {
-    return new NextResponse('Gone', { status: 410 });
+    const slug = pathname.replace(/^\/middle-names\/?/, '').replace(/\/$/, '').split('/')[0];
+    if (!slug || !MIDDLE_NAME_KEEP_SET.has(slug)) {
+      return new NextResponse('Gone', { status: 410 });
+    }
   }
 
   // /name/<slug>/ and /name/<slug>/by-decade/ — 410 if slug not in keep-set

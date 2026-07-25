@@ -1,0 +1,124 @@
+{
+  "date": "2026-07-25",
+  "kind": "spotlight",
+  "title": "Today’s name data: Hector",
+  "description": "2 readings from the NameBlooms dataset for 2026-07-25: record in focus: hector; where to go next. Every figure below is computed from the stored records, and each link opens the record it came from.",
+  "intro": "2 readings from the NameBlooms dataset for 2026-07-25: record in focus: hector; where to go next. Every figure below is computed from the stored records, and each link opens the record it came from.",
+  "items": [
+    {
+      "label": "Hector",
+      "value": "Reference page",
+      "href": "/name/hector/"
+    },
+    {
+      "label": "Harper",
+      "value": "Reference page",
+      "href": "/name/harper/"
+    },
+    {
+      "label": "Harold",
+      "value": "Reference page",
+      "href": "/name/harold/"
+    },
+    {
+      "label": "Harley",
+      "value": "Reference page",
+      "href": "/name/harley/"
+    },
+    {
+      "label": "Hannah",
+      "value": "Reference page",
+      "href": "/name/hannah/"
+    },
+    {
+      "label": "Hanna",
+      "value": "Reference page",
+      "href": "/name/hanna/"
+    },
+    {
+      "label": "Hallie",
+      "value": "Reference page",
+      "href": "/name/hallie/"
+    },
+    {
+      "label": "Herbert",
+      "value": "Reference page",
+      "href": "/name/herbert/"
+    },
+    {
+      "label": "Henry",
+      "value": "Reference page",
+      "href": "/name/henry/"
+    }
+  ],
+  "links": [
+    {
+      "label": "View Hector",
+      "href": "/name/hector/"
+    }
+  ],
+  "sections": [
+    {
+      "kind": "spotlight",
+      "heading": "Record in focus: Hector",
+      "body": "Hector records a reference value in the current NameBlooms data. The linked record holds the full field list and the source note behind the figure.",
+      "items": [
+        {
+          "label": "Hector",
+          "value": "Reference page",
+          "href": "/name/hector/"
+        }
+      ]
+    },
+    {
+      "kind": "route",
+      "heading": "Where to go next",
+      "body": "A short path through NameBlooms for anyone starting today. These are entry points into the detailed pages, not a substitute for them.",
+      "items": [
+        {
+          "label": "Harper",
+          "value": "Reference page",
+          "href": "/name/harper/"
+        },
+        {
+          "label": "Harold",
+          "value": "Reference page",
+          "href": "/name/harold/"
+        },
+        {
+          "label": "Harley",
+          "value": "Reference page",
+          "href": "/name/harley/"
+        },
+        {
+          "label": "Hannah",
+          "value": "Reference page",
+          "href": "/name/hannah/"
+        },
+        {
+          "label": "Hanna",
+          "value": "Reference page",
+          "href": "/name/hanna/"
+        },
+        {
+          "label": "Hallie",
+          "value": "Reference page",
+          "href": "/name/hallie/"
+        },
+        {
+          "label": "Herbert",
+          "value": "Reference page",
+          "href": "/name/herbert/"
+        },
+        {
+          "label": "Henry",
+          "value": "Reference page",
+          "href": "/name/henry/"
+        }
+      ]
+    }
+  ],
+  "source": "Social Security Administration",
+  "dataDate": "2026-07-25",
+  "fingerprint": "650cab2b"
+}

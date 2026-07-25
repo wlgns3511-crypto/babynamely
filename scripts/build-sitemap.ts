@@ -6,7 +6,7 @@
  *   Pre-prune: ~20,676 URLs. Dominated by:
  *     → /name/[slug]        × 6,782 (real SSA-verified name entities — KEEP)
  *     → /es/name/[slug]     × 6,782 (thin Spanish translation — still DROP)
- *     → /middle-names/[slug] × 6,782 (REVIVED 2026-04-24 — see below)
+ *     → /middle-names/[slug] × 6,782 (2026-07-24 재건 → 100만 유지, see below)
  *
  *   2026-04-22: Option B+ prune (conservative). DROP /es/name/ + /middle-names/.
  *
@@ -25,9 +25,10 @@ import Database from 'better-sqlite3';
 import {
   countNames,
   getAllOrigins,
-  getAvailableYears,
   getStaticNameSlugs,
+  getStaticMiddleNameSlugs,
 } from '../lib/db';
+import { getRosterYears, assertRosterCoverage } from '../lib/roster';
 import { getAllStates } from '../lib/states-data';
 import { getAllInsightArticles } from '../lib/insight-articles';
 
@@ -97,29 +98,15 @@ for (const l of 'abcdefghijklmnopqrstuvwxyz'.split('')) {
 // HCU doorway-thin content + scaled-content risk. Pages still render via
 // generateStaticParams (CAP=100); just not announced in sitemap.
 
-// ─── /middle-names/[slug] × 6,782 RE-DROPPED 2026-04-26 ──────────────────
-// 2026-04-22: dropped (thin scaled content concern).
-// 2026-04-24: REVIVED based on GSC query data (top queries = "middle names
-//             for X"). Strategic reversal — assumed traffic value > thin-
-//             content risk.
-// 2026-04-26: AdSense policy violation received ("광고 게재가 준비되지
-//             않은 사이트 / 가치가 별로 없는 콘텐츠"). The 2026-04-24 reversal
-//             was the wrong call — 6,782 derivative pages × ~1,400 words each
-//             (20 name-combo grid + 3-Q FAQ template) is exactly the
-//             "scaled content abuse" pattern Google now penalizes harder
-//             than thin-content historically did.
-// Decision: re-drop from sitemap + add noindex meta in page.tsx. Routes still
-// render (UX preserved for direct visitors) but Google sees neither sitemap
-// announcement nor index allowance. ~6,782 URLs removed from announcement.
-// Block intentionally retained as comment for audit trail / future revival
-// guard rail.
-//
-// const nbDbForMiddle = new Database(path.resolve(__dirname, '..', 'data', 'names.db'), { readonly: true, fileMustExist: true });
-// const middleNameRows = nbDbForMiddle.prepare('SELECT slug FROM names ORDER BY slug').all() as { slug: string }[];
-// nbDbForMiddle.close();
-// for (const n of middleNameRows) {
-//   add({ url: `${SITE_URL}/middle-names/${n.slug}/`, priority: '0.65', changefreq: 'monthly' });
-// }
+// ─── /middle-names/[slug] — 2026-07-24 재건 (6,782 → 100) ─────────────────
+// 이력: 2026-04-22 드롭 → 04-24 전량 부활 → 04-26 애드센스 정책 위반("scaled
+// content", 6,782 페이지가 성별당 top-20 을 그대로 붙인 도어웨이) → 재드롭+noindex.
+// 이번엔 first name 의 음절·끝소리·연대로 점수를 매겨 리스트가 실제로 달라진 페이지를,
+// 수요(Bing)∩keep 상위 100(getStaticMiddleNameSlugs)만 색인 허용·사이트맵 발표한다.
+// 나머지 슬러그는 미들웨어 410. 100개는 scaled 패턴이 아니다.
+for (const n of getStaticMiddleNameSlugs()) {
+  add({ url: `${SITE_URL}/middle-names/${n.slug}/`, lastmod: entityLastmod(`middle-${n.slug}`), priority: '0.65', changefreq: 'monthly' });
+}
 
 // Insights
 add({ url: `${SITE_URL}/insights/`, lastmod: entityLastmod('hub-insights'), priority: '0.8', changefreq: 'weekly' });
@@ -144,11 +131,17 @@ for (const origin of getAllOrigins()) {
   add({ url: `${SITE_URL}/names/origin/${slug}/`, lastmod: entityLastmod(`origin-${slug}`), priority: '0.7', changefreq: 'monthly' });
 }
 
-// Year pages — mirrors names/year generateStaticParams selection
-const selectedYears = getAvailableYears().filter((year) => year % 10 === 0 || year >= 2000);
+// Year pages — mirrors names/year generateStaticParams selection.
+// 2026-07-26: 37 → 145 전량. 이전 필터(`% 10 === 0 || >= 2000`)로 108년이 빠져
+// name_year_rank 199,928행이 어느 페이지에도 안 실렸다.
+const selectedYears = getRosterYears();
 for (const year of selectedYears) {
   add({ url: `${SITE_URL}/names/year/${year}/`, lastmod: entityLastmod(`year-${year}`), priority: '0.6', changefreq: 'monthly' });
 }
+
+// 압축 전제 게이트 — state_name_total / name_year_rank 전량이 실제로 발행되는
+// 주·연도 페이지에 담기는지. 하나라도 빠지면 여기서 죽고 sitemap 을 안 쓴다.
+assertRosterCoverage(getAllStates().map((s) => s.code), selectedYears);
 
 // Name pages — keep-set JSON (top-1500 by peak_pct ∪ Bing evidence),
 // shared with page generateStaticParams + middleware 410 (HCU 2026-07-03;

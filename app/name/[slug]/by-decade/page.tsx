@@ -64,6 +64,12 @@ function getTop100NameSlugs(): string[] {
   return rows.map((r) => r.slug);
 }
 
+let _top100NameSlugSet: Set<string> | null = null;
+function getTop100NameSlugSet(): Set<string> {
+  if (!_top100NameSlugSet) _top100NameSlugSet = new Set(getTop100NameSlugs());
+  return _top100NameSlugSet;
+}
+
 // Inline DB helper — peer names that peaked in the same decade (up to 6, same gender).
 function getSameDecadePeers(
   peakYear: number,
@@ -85,16 +91,16 @@ function getSameDecadePeers(
          AND slug != ?
          AND peak_pct IS NOT NULL
        ORDER BY peak_pct DESC
-       LIMIT ?`
+       LIMIT 100`
     )
-    .all(decadeStart, decadeStart + 10, gender, excludeSlug, limit) as {
+    .all(decadeStart, decadeStart + 10, gender, excludeSlug) as {
     slug: string;
     name: string;
     peak_year: number;
     peak_pct: number;
   }[];
   db.close();
-  return rows;
+  return rows.filter((row) => getTop100NameSlugSet().has(row.slug)).slice(0, limit);
 }
 
 export async function generateStaticParams() {

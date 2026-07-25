@@ -14,6 +14,9 @@
  */
 import path from 'path';
 import Database from 'better-sqlite3';
+import nameKeepList from './generated/name-keep.json';
+
+const NAME_KEEP_SET = new Set(nameKeepList as string[]);
 
 const DB_PATH = path.join(process.cwd(), 'data', 'names.db');
 let _factsDb: Database.Database | null = null;
@@ -212,14 +215,17 @@ export function getNameFacts(slug: string): NameFacts | null {
            WHERE r.year = ? AND n.gender = ? AND r.slug != ?
                  AND ABS(r.rank - ?) BETWEEN 1 AND 5
            ORDER BY ABS(r.rank - ?) ASC, r.rank ASC
-           LIMIT 6`,
+           LIMIT 100`,
         )
         .all(LATEST_YEAR, meta.gender, slug, current.rank, current.rank) as {
         slug: string;
         name: string;
         rank: number;
         pct: number;
-      }[]).map((r) => ({ slug: r.slug, name: r.name, rank: r.rank, pctOrYear: r.pct }))
+      }[])
+        .filter((r) => NAME_KEEP_SET.has(r.slug))
+        .slice(0, 6)
+        .map((r) => ({ slug: r.slug, name: r.name, rank: r.rank, pctOrYear: r.pct }))
     : [];
 
   // Peers that peaked in the same decade — different vibe (cohort comparison)

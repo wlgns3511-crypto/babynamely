@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build:sitemap": "tsx scripts/build-sitemap.ts",
-    "build": "npm run build:sitemap && next build",
+    "build": "npm run build:sitemap && npm run daily:generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "daily:generate": "npx tsx scripts/generate-daily.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

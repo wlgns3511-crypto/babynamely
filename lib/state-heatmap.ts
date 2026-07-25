@@ -62,17 +62,9 @@ export function stateName(code: string): string {
   return STATE_NAMES[code] ?? code;
 }
 
-/**
- * Count rows in state_name_total for a given state code.
- * Surfaced as `backedRowCount` in stateDatasetSchema for AdSense reviewers
- * — verifies the per-state page is data-backed (not templated boilerplate).
- */
-export function getStateBackedRowCount(stateCode: string): number {
-  const row = getDb()
-    .prepare('SELECT COUNT(*) AS c FROM state_name_total WHERE state = ?')
-    .get(stateCode.toUpperCase()) as { c: number } | undefined;
-  return row?.c ?? 0;
-}
+// getStateBackedRowCount() 삭제 2026-07-26 — backedRowCount 는 이제 렌더되는 로스터
+// 배열 길이(getStateRoster().total)에서 파생한다. 별도 COUNT 는 페이지가 실제로
+// 보여주는 것과 조용히 어긋날 수 있었다(그게 이 사이트의 라벨≠계산 원인이었다).
 
 export function getNameStateRows(slug: string, gender: string): StateRow[] {
   return getDb()

@@ -1,3 +1,4 @@
+import { DailyPulse } from "@/components/DailyPulse";
 import { getPopularNames, countNames, getAllOrigins } from "@/lib/db";
 import { genderColor } from "@/lib/format";
 import { AdSlot } from "@/components/AdSlot";
@@ -41,6 +42,8 @@ export default function Home() {
   ];
 
   return (
+      <>
+      <DailyPulse />
     <div>
       {/* Data-sovereignty strip — source attribution + coverage above-the-fold (AdSense gate) */}
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-widest text-slate-500">
@@ -84,8 +87,8 @@ export default function Home() {
       />
 
       <PopularEntities
-        heading="Trending Baby Names"
-        subheading="Most popular boy and girl names by peak popularity"
+        heading="Featured Baby Names"
+        subheading="Editorial entry points with historical SSA popularity data"
         items={trendingItems}
         columns={3}
         viewAllHref="/names/gender/boy/"
@@ -154,5 +157,6 @@ export default function Home() {
 
       <AuthorBox />
     </div>
+      </>
   );
 }

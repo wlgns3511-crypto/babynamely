@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import nameKeepList from './generated/name-keep.json';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'names.db');
 let _db: Database.Database | null = null;
@@ -152,16 +153,20 @@ export function getArchetypeForSlug(slug: string): { archetype: ArchetypeSlug | 
 }
 
 export function getNamesByArchetype(archetype: ArchetypeSlug, limit = 200): ArchetypeName[] {
-  return getDb()
+  const keepSet = new Set(nameKeepList as string[]);
+  return (getDb()
     .prepare(
-      'SELECT slug, name, gender, origin, meaning, peak_year, peak_pct, archetype, archetype_score FROM names WHERE archetype = ? ORDER BY archetype_score DESC NULLS LAST, peak_pct DESC NULLS LAST LIMIT ?'
+      'SELECT slug, name, gender, origin, meaning, peak_year, peak_pct, archetype, archetype_score FROM names WHERE archetype = ? ORDER BY archetype_score DESC NULLS LAST, peak_pct DESC NULLS LAST'
     )
-    .all(archetype, limit) as ArchetypeName[];
+    .all(archetype) as ArchetypeName[])
+    .filter((name) => keepSet.has(name.slug))
+    .slice(0, limit);
 }
 
 export function countNamesByArchetype(archetype: ArchetypeSlug): number {
-  const row = getDb()
-    .prepare('SELECT COUNT(*) as c FROM names WHERE archetype = ?')
-    .get(archetype) as { c: number };
-  return row.c;
+  const keepSet = new Set(nameKeepList as string[]);
+  const rows = getDb()
+    .prepare('SELECT slug FROM names WHERE archetype = ?')
+    .all(archetype) as { slug: string }[];
+  return rows.filter(({ slug }) => keepSet.has(slug)).length;
 }

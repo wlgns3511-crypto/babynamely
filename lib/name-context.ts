@@ -8,6 +8,9 @@
  */
 import Database from 'better-sqlite3';
 import path from 'path';
+import nameKeepList from './generated/name-keep.json';
+
+const NAME_KEEP_SET = new Set(nameKeepList as string[]);
 
 const DB_PATH = path.join(process.cwd(), 'data', 'names.db');
 let _db: Database.Database | null = null;
@@ -39,21 +42,25 @@ export function getSameArchetypePeers(
   peakYear: number | null,
 ): ArchetypePeer[] {
   if (peakYear == null) {
-    return db()
+    return (db()
       .prepare(
         `SELECT slug, name, peak_year, peak_pct FROM names
          WHERE archetype = ? AND gender = ? AND slug != ?
-         ORDER BY peak_pct DESC LIMIT 5`,
+         ORDER BY peak_pct DESC LIMIT 100`,
       )
-      .all(archetype, gender, slug) as ArchetypePeer[];
+      .all(archetype, gender, slug) as ArchetypePeer[])
+      .filter((peer) => NAME_KEEP_SET.has(peer.slug))
+      .slice(0, 5);
   }
-  return db()
+  return (db()
     .prepare(
       `SELECT slug, name, peak_year, peak_pct FROM names
        WHERE archetype = ? AND gender = ? AND slug != ? AND peak_year IS NOT NULL
-       ORDER BY ABS(peak_year - ?) ASC, peak_pct DESC LIMIT 5`,
+       ORDER BY ABS(peak_year - ?) ASC, peak_pct DESC LIMIT 100`,
     )
-    .all(archetype, gender, slug, peakYear) as ArchetypePeer[];
+    .all(archetype, gender, slug, peakYear) as ArchetypePeer[])
+    .filter((peer) => NAME_KEEP_SET.has(peer.slug))
+    .slice(0, 5);
 }
 
 export interface CohortRank {
@@ -118,8 +125,9 @@ export function getLetterRank(
     .prepare(
       `SELECT slug, name, peak_pct FROM names
        WHERE substr(upper(name), 1, 1) = ? AND gender = ? AND slug != ? AND peak_pct IS NOT NULL
-       ORDER BY peak_pct DESC LIMIT 3`,
+       ORDER BY peak_pct DESC LIMIT 100`,
     )
     .all(letter, gender, slug) as { slug: string; name: string; peak_pct: number | null }[];
-  return { rank, total: total.c, topPeers, letter };
+  const keptTopPeers = topPeers.filter((peer) => NAME_KEEP_SET.has(peer.slug)).slice(0, 3);
+  return { rank, total: total.c, topPeers: keptTopPeers, letter };
 }
