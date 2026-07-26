@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { ANALYSIS_VINTAGE as DATA_VINTAGE } from "./authorship";
 
 export type DailyKind = "comparison" | "spotlight" | "ranking" | "route";
 export type DailyItem = { label: string; value: string; href: string; metric?: number; metricLabel?: string; verdict?: string };
@@ -423,7 +424,10 @@ export async function generateDailyEntry(date = todayKst()): Promise<DailyEntry>
     links: leadItems.slice(0, 3).map((item) => ({ label: `View ${item.label}`, href: item.href })),
     sections,
     source: PROFILE.source,
-    dataDate: date,
+    // 2026-07-26 — `dataDate: date` 였다. 페이지는 이 값을 "Source: <출처>. Data date: X."
+    // 로 렌더하므로 발행일을 넣으면 오래된 스냅샷을 오늘 자 데이터라고 공지한다. 사이트가
+    // 이미 lib/authorship.ts 에 갖고 있는 빈티지 상수를 쓴다(stamp-vintage.py 가 갱신).
+    dataDate: DATA_VINTAGE ?? date,
   });
 }
 
